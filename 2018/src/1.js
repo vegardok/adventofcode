@@ -1,7 +1,7 @@
 const fs = require('fs')
 const process = require('process');
 
-const input = String(fs.readFileSync('inputs/1.txt')).trim();
+const input = String(fs.readFileSync(__dirname + '/../inputs/1.txt')).trim();
 
 const numbers = input.split('\n')
       .map(s => parseInt(s))

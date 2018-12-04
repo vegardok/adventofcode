@@ -1,6 +1,6 @@
 const fs = require('fs')
 
-const inputs = String(fs.readFileSync('./inputs/2.txt')).trim().split('\n')
+const inputs = String(fs.readFileSync(__dirname + '/../inputs/2.txt')).trim().split('\n')
 
 function count(id) {
   const c = id.split('').reduce((a, s) => {

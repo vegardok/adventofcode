@@ -1,6 +1,6 @@
 const fs = require('fs')
 
-const inputs = String(fs.readFileSync('./inputs/3.txt')).trim().split('\n')
+const inputs = String(fs.readFileSync(__dirname + '/../inputs/3.txt')).trim().split('\n')
 
 const claims = inputs.map(s => {
   const [id, rest] = s.split(' @ ');
