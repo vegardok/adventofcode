@@ -1,0 +1,10 @@
+* Advent of code 2018
+  https://adventofcode.com
+
+  Language: javascript
+
+** Run the code
+   #+BEGIN_SRC bash
+   npm i
+   node index.js
+   #+END_SRC
