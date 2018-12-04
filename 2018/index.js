@@ -4,3 +4,4 @@ console.log()
 require('./src/1');
 require('./src/2');
 require('./src/3');
+require('./src/4');
