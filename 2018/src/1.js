@@ -1,5 +1,4 @@
 const fs = require('fs')
-const process = require('process');
 
 const input = String(fs.readFileSync(__dirname + '/../inputs/1.txt')).trim();
 
@@ -16,7 +15,6 @@ function* getNumbers () {
   let _numbers = [0]
 
   let n = 0;
-  let last = 0;
   while(true) {
     _numbers[n + 1] = _numbers[n] + numbers[n % numbers.length];
     yield _numbers[n + 1]

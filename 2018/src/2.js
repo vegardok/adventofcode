@@ -32,8 +32,8 @@ function distance(a, b) {
   return a.reduce((accl, s, i) => accl + (s === b[i] ? 0 : 1), 0)
 }
 
-inputs.find((id1, i1) => {
-  return inputs.find((id2, i2) => {
+inputs.find(id1 => {
+  return inputs.find(id2 => {
     if (distance(id1, id2) === 1) {
       id1= id1.split('')
       id2= id2.split('')
