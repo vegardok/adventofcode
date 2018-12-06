@@ -6,3 +6,4 @@ require('./src/2');
 require('./src/3');
 require('./src/4');
 require('./src/5');
+require('./src/6');
