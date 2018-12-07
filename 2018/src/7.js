@@ -1,93 +1,89 @@
 const fs = require('fs')
-const { range, uniq } = require('lodash')
+const {
+  List,
+  Map,
+  OrderedMap,
+  Range,
+  Set,
+  fromJS
+} = require('immutable')
 
-const inputs = String(fs.readFileSync(__dirname + '/../inputs/7.txt'))
+
+const input = String(fs.readFileSync(__dirname + '/../inputs/7.txt'))
       .trim()
       .split('\n')
-      .map(l => l.split(' '))
-      .map(a => ({ step: a[1], before: a[7]}))
 
-var a = uniq(inputs.reduce((l, n) => [...l, n.step, n.before], [])).sort()
+const graph = fromJS(input)
+      .reduce((accl, i) => {
+        const step = i.split(' ')[1]
+        const dep = i.split(' ')[7]
+        return accl
+          .update(dep, Set(), s => s.add(step))
+          .set(step, accl.get(step) || Set())
+      }, Map())
 
-let graph = a.reduce((g, a) => {
-  g[a] = {
-    step: a,
-    depBy: [],
-  };
-  return g
-}, {})
-
-graph = Object.values(inputs.reduce((graph, { step, before }) => {
-  graph[before].depBy.push(step)
-  return graph
-}, graph))
-
-
-const ready = node => node.depBy.length === 0
-let s = ''
-
-let g1 = [...graph]
-
-while (g1.length > 0) {
-  const next = g1.filter(n => ready(n)).map(n => n.step).sort()[0]
-  g1 = g1.map(n => ({
-    ...n,
-    depBy: n.depBy.filter(d => d !== next)
-
-  })).filter(n => n.step !== next)
-
-  s += next
+function getDepOrder(graph, done = List()) {
+  const next = graph
+        .filter((deps, key) => !done.includes(key))
+        .filter(deps => deps.filterNot(d => done.includes(d)).isEmpty())
+        .keySeq().sort().first()
+  if (next) {
+    return List(next).concat(getDepOrder(graph, done.concat(next)))
+  }
+  return ''
 }
 
-console.log(`Solution 7.1: \t ${s}`)
+const a1 = getDepOrder(graph).join('')
+
+console.log(`Solution 7.1: \t ${a1}`)
 
 // part 2
 
-const cost = a => 61 + (a.charCodeAt(0) - 65)
 
-let g2 = graph.map(n => ({ ...n, remaining: cost(n.step) }))
+const WORKER_COUNT = 5
+const cost = a => 60 + (a.charCodeAt(0) - 64)
 
-let WORKERS = range(5).reduce((w, i) => { w[`worker_${i}`] = null; return w}, {})
-
-const working = node => Object.values(WORKERS).indexOf(node.step) !== -1;
-let i = 0
-while (g2.length > 0) {
-  const candidates = g2.filter(n => ready(n) && !working(n) ).map(n => n.step).sort()
-
-  const freeWorkers = Object.entries(WORKERS)
-        .filter((n) => !n[1]).map(w => w[0])
-  const next = candidates.slice(0, freeWorkers.length)
+const graph2 = graph.map((deps, key) => Map({
+  deps,
+  remaining: cost(key),
+  working: false
+}))
 
 
-  next.forEach((job, i) => {
-    WORKERS[freeWorkers[i]] = job
-    g2.filter(s => s.step === job)[0].worker = freeWorkers[i]
-  })
-
-  const done = []
-  g2 = g2.map(node => ({
-    ...node,
-    remaining: node.worker ? node.remaining - 1 : node.remaining
-  })).map(node => {
-    if (node.remaining === 0) {
-      done.push(node.step)
-      WORKERS[node.worker] = null
-
-      return {
-        ...node,
-        worker: null
-      }
-    } else {
-      return node
-    }
-  })
-  if (done.length > 0) {
-    g2 = g2.map(n => ({
-      ...n,
-      depBy: n.depBy.filter( d => done.indexOf(d))
-    })).filter(node => done.indexOf(node.step) !== 0)
-
+function countIterations(graph, done = List(), workers = WORKER_COUNT, steps = 0) {
+  const remaining = graph.reduce((s, v) => s + v.get('remaining'), 0)
+  if (remaining === 0 || steps >= 1500) {
+    return steps
   }
-  i += 1
+
+  const startWorking = graph
+        .filter((deps, key) => !done.includes(key))
+        .filter(node => node.get('deps').filterNot(
+          d => done.includes(d)).isEmpty())
+        .filter(node => !node.get('working'))
+        .keySeq()
+        .take(workers)
+
+  const doneNow = graph.filter(node => node.get('remaining') === 1 && node.get('working')).keySeq()
+
+  const newGraph = startWorking
+        .reduce((a, v) => {
+          return a.setIn([v, 'working'], true)
+        }, graph)
+        .map(node => node
+             .update('remaining',
+                     r => node.get('working') ? r - 1 : r)
+             .update('working',
+                     working => working && node.get('remaining') !== 1)
+            )
+  return countIterations(
+    newGraph,
+    done.concat(doneNow),
+    workers - startWorking.size + doneNow.size,
+    steps + 1
+  )
 }
-console.log(`Solution 7.2: \t ${i}`)
+
+const a2 = countIterations(graph2)
+
+console.log(`Solution 7.2: \t ${a2}`)
