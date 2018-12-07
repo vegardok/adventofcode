@@ -75,4 +75,3 @@ const sleepers = Object.entries(guards)
       .sort((a, b) => b[1][1] - a[1][1])[0]
 
 console.log(`Solution 4.2: \t ${sleepers[0] * sleepers[1][0]}`)
-console.log()

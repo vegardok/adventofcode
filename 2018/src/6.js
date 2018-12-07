@@ -78,5 +78,4 @@ const distances = flatten(range(0,X).map(
     y => inputs.reduce((sum, p) => sum + distance(p, { x, y }), 0))))
 
 // console.log(distances.slice(0, 100))
-console.log(`Solution 6.1: \t ${distances.filter(d => d < 10000).length}`) // 40252
-console.log()
+console.log(`Solution 6.1: \t ${distances.filter(d => d < 10000).length}`) // 4025

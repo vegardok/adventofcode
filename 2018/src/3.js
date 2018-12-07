@@ -54,5 +54,3 @@ const soloClaim = claims.find(claim => {
 })
 
 console.log(`Solution 3.2: \t ${soloClaim.id}`)
-
-console.log()

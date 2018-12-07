@@ -1,10 +1,9 @@
+const { Range } = require('immutable');
 console.log('Advent of code 2018')
 console.log()
 
-require('./src/1')
-require('./src/2')
-require('./src/3')
-require('./src/4')
-require('./src/5')
-require('./src/6')
-require('./src/7')
+Range(1, 7).forEach(i => {
+  const start = Date.now()
+  require(`./src/${i}`)
+  console.log(`Challenge ${i}, (${Date.now() - start}ms)\n`)
+})

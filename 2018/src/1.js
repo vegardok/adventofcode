@@ -25,11 +25,9 @@ function* getNumbers () {
 const seen = {}
 for (let n of getNumbers()) {
   if (seen[n]) {
-    console.log(`Solution 1.1: \t ${n}`)
+    console.log(`Solution 1.2: \t ${n}`)
     break
   } else {
     seen[n] = true
   }
 }
-
-console.log()

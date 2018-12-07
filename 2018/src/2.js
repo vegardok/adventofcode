@@ -44,5 +44,3 @@ inputs.find(id1 => {
     }
   })
 })
-
-console.log()
