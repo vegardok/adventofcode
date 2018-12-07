@@ -4,11 +4,11 @@ const inputs = String(fs.readFileSync(__dirname + '/../inputs/2.txt')).trim().sp
 
 function count(id) {
   const c = id.split('').reduce((a, s) => {
-    a[s] =(a[s] || 0) + 1;
+    a[s] =(a[s] || 0) + 1
     return a
-  }, {});
+  }, {})
 
-  return new Set(Object.values(c).filter(v => v > 1));
+  return new Set(Object.values(c).filter(v => v > 1))
 }
 
 const counts = inputs
@@ -20,7 +20,7 @@ const counts = inputs
         return a
       }, {})
 
-const checksum = Object.values(counts).reduce((a, n) => a * n, 1);
+const checksum = Object.values(counts).reduce((a, n) => a * n, 1)
 
 console.log(`Solution 2.1: \t ${checksum}`)
 
@@ -40,7 +40,7 @@ inputs.find(id1 => {
       const common = id1.filter((s, i) => s === id2[i])
 
       console.log(`Solution 2.1: \t ${common.join('')}`)
-      return true;
+      return true
     }
   })
 })

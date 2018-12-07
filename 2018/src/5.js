@@ -24,7 +24,7 @@ const POLAR_DISTANCE = 'a'.charCodeAt(0) - 'A'.charCodeAt(0)
 let part1 = inputs.slice()
 
 function minLength(part1) {
-  let working = true;
+  let working = true
   while (working) {
     working = false
     for (let i = 0; i < part1.length; i++) {
@@ -49,13 +49,13 @@ function range(start, stop) {
   for (let i = start; i < stop; i++) {
     l.push(i)
   }
-  return l;
+  return l
 }
 
 const a2 = range('A'.charCodeAt(0), 'Z'.charCodeAt(0))
       .reduce((accl, i) => {
-        let part2 = inputs.filter(c => c !== i && c !== i + 32);
-        return Math.min(accl, minLength(part2));
+        let part2 = inputs.filter(c => c !== i && c !== i + 32)
+        return Math.min(accl, minLength(part2))
       }, inputs.length)
 
 

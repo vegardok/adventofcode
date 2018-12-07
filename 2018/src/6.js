@@ -29,7 +29,7 @@ const colors = [
   'bgMagentaBright',
   'bgCyanBright',
   'bgWhiteBright',
-];
+]
 
 const format = i => {
   if (i === -1) {

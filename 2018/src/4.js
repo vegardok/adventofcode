@@ -15,7 +15,7 @@ const sum = (l, fn = i => i) => l.reduce((a, i) => a + fn(i), 0)
 const shifts = startIndexes.map((start, i) => {
   const [startShift, rest] = inputs[start].substr(1).split('] ')
   const id = parseInt(rest.split('Guard ')[1].split(' ')[0].substr(1))
-  const sleepCycles = [];
+  const sleepCycles = []
 
   const stop = startIndexes[i + 1] || startIndexes.length
   for (let i = start + 1; i < stop; i += 2) {
@@ -32,7 +32,7 @@ const shifts = startIndexes.map((start, i) => {
     id,
     startShift,
     sleepCycles
-  };
+  }
 })
 
 const guards = shifts.reduce((accl, shift) => ({
@@ -51,9 +51,9 @@ const sleepyGuard = sleepSum.sort((a,b) => b.sleepSum - a.sleepSum)[0]
 const hardestMinute = guards[sleepyGuard.id]
       .reduce((accl, { asleep, awake }) => {
         for (let i = asleep; i < awake; i += 1) {
-          accl[i] += 1;
+          accl[i] += 1
         }
-        return accl;
+        return accl
       }, new Array(60).fill(0))
       .map((c,i) => ([c,i]))
       .sort((a,b) => b[0] - a[0])[0][1]
@@ -69,7 +69,7 @@ const sleepers = Object.entries(guards)
             accl[i][id] = (accl[i][id] || 0) + 1
           }
         })
-        return accl;
+        return accl
       }, new Array(60).fill().map(() => ({ foo: 0 })))
       .map((c, i) => [i, Object.entries(c).sort((a,b) => b[1] - a[1])[0]])
       .sort((a, b) => b[1][1] - a[1][1])[0]
