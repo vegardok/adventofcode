@@ -1,41 +1,49 @@
-const { Range } = require('immutable')
-
+function range(start, stop) {
+  var r = []
+  for (let i = start; i < stop; i++) {
+    r.push(i)
+  }
+  return r
+}
 
 function getHighScore(PLAYERS, STOP) {
   let currentMarble = 0
   let currentPlayer = 0
 
-  let score = Range(0, PLAYERS).reduce((m, i) => { m[i] = 0; return m }, {})
-  let game = [0]
+  let score = range(0, PLAYERS).reduce((m, i) => { m[i] = 0; return m }, {})
+
+  let current = { value: 0 }
+  current.p = current
+  current.n = current
 
   for (let i = currentMarble + 1; i < STOP + 1; i++) {
-    if (i % 10000 === 0) {
-      console.log(i, i / STOP * 100)
-    }
-
-
     if (i % 23 === 0) {
-      currentMarble = (currentMarble - 7) % game.length
-      if (currentMarble < 0) {
-        currentMarble = game.length + currentMarble
+      score[currentPlayer] += i
+
+      let target = current
+      for(let i = 0; i < 7;i++) {
+        target = target.p
       }
+      score[currentPlayer] += target.value
 
-
-      score[currentPlayer] = score[currentPlayer] + i + game[currentMarble]
-      game.splice(currentMarble, 1)
+      target.n.p = target.p
+      target.p.n = target.n
+      current = target.n
     } else {
-      let next = (currentMarble + 2) % (game.length)
-      if (next === 0) {
-        next = game.length
+      const target = current.n
+      const node = {
+        value: i,
+        n: target.n,
+        p: target,
       }
-      game.splice(next, 0, i)
-
-      currentMarble = next
-      currentPlayer = (currentPlayer + 1) % PLAYERS
-
+      target.n.p = node
+      target.n = node
+      current = node
     }
+    currentPlayer = (currentPlayer + 1) % PLAYERS
   }
 
+  // console.log(JSON.stringify(score, null, 2))
   const winner = Object.values(score).sort((a, b) => b - a)
   return winner[0]
 }
@@ -50,11 +58,9 @@ function getHighScore(PLAYERS, STOP) {
 // 30 players; last marble is worth 5807 points: high score is 37305
 
 
-getHighScore(9, 25)
-
 const a1 = getHighScore(459, 71320)
 console.log(`Solution 9.1: \t ${a1}`)
 
 
-// const a2 = getHighScore(459, 71320 * 100)
-// console.log(`Solution 9.1: \t ${a2}`)
+const a2 = getHighScore(459, 71320 * 100)
+console.log(`Solution 9.1: \t ${a2}`)
