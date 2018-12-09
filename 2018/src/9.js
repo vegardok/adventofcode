@@ -43,11 +43,9 @@ function getHighScore(PLAYERS, STOP) {
     currentPlayer = (currentPlayer + 1) % PLAYERS
   }
 
-  // console.log(JSON.stringify(score, null, 2))
   const winner = Object.values(score).sort((a, b) => b - a)
   return winner[0]
 }
-
 
 // 459 players; last marble is worth 71320 points
 
@@ -60,7 +58,6 @@ function getHighScore(PLAYERS, STOP) {
 
 const a1 = getHighScore(459, 71320)
 console.log(`Solution 9.1: \t ${a1}`)
-
 
 const a2 = getHighScore(459, 71320 * 100)
 console.log(`Solution 9.1: \t ${a2}`)
