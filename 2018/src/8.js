@@ -2,50 +2,48 @@ const fs = require('fs')
 const {
   List,
   Map,
-  OrderedMap,
   Range,
-  Set,
   fromJS
 } = require('immutable')
 
-
-
 const alt = '2 3 0 3 10 11 12 1 1 0 1 99 2 1 1 2'
-// 0 3 10 11 12 1 1 0 1 99 2
-// const alt = '0 3 1 2 10'
-const input =String(fs.readFileSync(__dirname + '/../inputs/8.txt'))
+
+const input = alt // String(fs.readFileSync(__dirname + '/../inputs/8.txt'))
       .trim()
       .split(' ')
       .map(c => parseInt(c))
 
-
-let tree = Map()
-
-function build(s, id=[]) {
+function build(s, id=0, tree=Map()) {
+  console.log(s)
   if (s.length === 0) {
-    console.log('ping')
-    return List()
+    return [s, tree]
   }
   const childCount = s.splice(0, 1)[0]
   const dataCount = s.splice(0, 1)[0]
-  let data = []
+
+
 
   if (childCount !== 0) {
     for (let i = 0; i < childCount; i++ ) {
-      s = build(s, [...id, i])
-
+      const foo = build(s, i, s)
+      s = foo[0]
+      // tree = foo[1]
+      console.log(i)
+      tree = foo[1].set(i, tree)
     }
   }
-  data = s.splice(0, dataCount)
-  // console.log({ id, data })
-  tree = tree.setIn([...id, 'value'], fromJS(data))
-  // console.log(tree)
-  // valueNodes.push(data)
-  return s
+  const value = fromJS(s.splice(0, dataCount))
+  console.log({ tree })
+  return [s, tree.set('value', value)]
 }
 
 
-build(input)
+const [s, tree] = build(input)
+
+console.log(JSON.stringify(tree.toJS(), null, 2))
+
+process.exit(0)
+
 const sumReducer = l => l.reduce((s, v) => s + v, 0)
 function sum(tree) {
   const v = sumReducer(tree.get('value', List()))
@@ -59,6 +57,7 @@ function sum(tree) {
 const a1 = sum(tree)
 
 console.log('sum', a1)
+console.log(a1 === 46781)
 
 
 function sum2(tree) {
@@ -77,3 +76,4 @@ function sum2(tree) {
 const a2 = sum2(tree)
 
 console.log(a2)
+console.log(a2 === 21405)
