@@ -1,51 +1,51 @@
-const { Range } = require('immutable')
+function range(start, stop) {
+  var r = []
+  for (let i = start; i < stop; i++) {
+    r.push(i)
+  }
+  return r
+}
 
 function getHighScore(PLAYERS, STOP) {
   let currentMarble = 0
   let currentPlayer = 0
 
-  let score = Range(0, PLAYERS).reduce((m, i) => { m[i] = 0; return m }, {})
-  let game = new Uint32Array(STOP)
-  let boardSize = 1
+  let score = range(0, PLAYERS).reduce((m, i) => { m[i] = 0; return m }, {})
+
+  let current = { value: 0 }
+  current.p = current
+  current.n = current
 
   for (let i = currentMarble + 1; i < STOP + 1; i++) {
-    if (i % 10000 === 0) {
-      console.log(i, i / STOP * 100)
-    }
-
-
     if (i % 23 === 0) {
-      currentMarble = (currentMarble - 7) % boardSize
-      if (currentMarble < 0) {
-        currentMarble = boardSize + currentMarble
-      }
-      score[currentPlayer] = score[currentPlayer] + i + game[currentMarble]
+      score[currentPlayer] += i
 
-      // todo
-      game.copyWithin(currentMarble, currentMarble + 1, boardSize)
-      boardSize -= 1
+      let target = current
+      for(let i = 0; i < 7;i++) {
+        target = target.p
+      }
+      score[currentPlayer] += target.value
+
+      target.n.p = target.p
+      target.p.n = target.n
+      current = target.n
     } else {
-      let next = (currentMarble + 2) % (boardSize)
-      // console.log({ i, boardSize, next, })
-      if (next === 0) {
-        next = boardSize
+      const target = current.n
+      const node = {
+        value: i,
+        n: target.n,
+        p: target,
       }
-
-      game.copyWithin(next + 1, next, boardSize)
-
-      game[next] = i
-      currentMarble = next
-      currentPlayer = (currentPlayer + 1) % PLAYERS
-      boardSize += 1
+      target.n.p = node
+      target.n = node
+      current = node
     }
-    // console.log(boardSize, game.slice(0, boardSize ).join(', '))
-    // console.log()
+    currentPlayer = (currentPlayer + 1) % PLAYERS
   }
 
   const winner = Object.values(score).sort((a, b) => b - a)
   return winner[0]
 }
-
 
 // 459 players; last marble is worth 71320 points
 
@@ -58,7 +58,6 @@ function getHighScore(PLAYERS, STOP) {
 
 const a1 = getHighScore(459, 71320)
 console.log(`Solution 9.1: \t ${a1}`)
-
 
 const a2 = getHighScore(459, 71320 * 100)
 console.log(`Solution 9.1: \t ${a2}`)
