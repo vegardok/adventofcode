@@ -9,14 +9,12 @@ function range(start, stop) {
 }
 
 function slice(grid, X, Y, size=3) {
-  // return grid.slice(Y, Y+size).reduce((accl, l) => accl.concat(l.slice(X, X+size), []))
-
-
-  return range(Y, Y + size).map(y => range(X, X+size).map(x => (grid[y] || []) [x] || 0))
+  return grid.slice(Y, Y+ size )
+    .reduce((accl, l) => accl.concat(l.slice(X, X+size)), [])
 }
 
 function sumSlice(grid, X, Y, size=3) {
-  return slice(grid, X, Y, size).reduce((s, a) => s+ a.reduce((si, i) => si + i, 0), 0)
+  return slice(grid, X, Y, size).reduce((s, i) => s+ i, 0)
 }
 
 const GRID_SERIAL_NUMBER = 7857 // TODO
@@ -33,12 +31,14 @@ const FUEL_TANK = range(0, 301).map(y => range(0, 301).map(x => {
   powerLevel = parseInt(powerLevel.toString().split('').reverse()[2] || '0')
   powerLevel -= 5
   return powerLevel
-}));
+}))
+
 
 // console.log(FUEL_TANK[PRINT_Y][PRINT_X])
 
-// console.log(slice(FUEL_TANK, PRINT_X, PRINT_Y, 3).join(' '))
-// console.log(sumSlice(FUEL_TANK, PRINT_X, PRINT_Y, 3))
+console.log(slice(FUEL_TANK, PRINT_X, PRINT_Y, 3).join(' '))
+console.log()
+console.log(sumSlice(FUEL_TANK, PRINT_X, PRINT_Y))
 
 
 let largestCoord = [0, 0, 0]
@@ -54,13 +54,16 @@ console.log(largestCoord)
 
 
 largestCoord = [0, 0, 0, 1]
-range(0, 301).forEach(y => range(0, 301).forEach(x => {
-  range(1, 300).forEach(size => {
-    const sum = sumSlice(FUEL_TANK, x, y, size)
-    if (sum > largestCoord[2]) {
-      largestCoord = [x, y, sum, size]
-    }
+range(1, 300).forEach(size => {
+  console.log({ size })
+  range(0, 301 - size).forEach(y => {
+    range(0, 301 - size).forEach(x => {
+      const sum = sumSlice(FUEL_TANK, x, y, size)
+      if (sum > largestCoord[2]) {
+        largestCoord = [x, y, sum, size]
+      }
+    })
   })
-}))
+})
 
 console.log(largestCoord)
