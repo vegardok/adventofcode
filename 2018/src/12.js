@@ -1,86 +1,92 @@
-const fs = require('fs')
-const { Map, Range } = require('immutable')
+const { Range, Map } = require('immutable')
 
-let input =String(fs.readFileSync(__dirname + '/../inputs/11.txt'))
+const fs = require('fs')
+
+const input =String(fs.readFileSync(__dirname + '/../inputs/12.txt'))
     .trim()
     .split('\n')
 
-let pots = input[0].split(': ')[1] // .split('') //.map(c => c === '#')
-
-function countSub(s, c) {
-  let abort = false
-  return s.split('').reduce((sum, char) => {
-    abort = abort || c !== char
-    return sum + (abort ? 0 : 1)
-  }, 0)
-}
-
-function pad(s) {
-  const leftEmpty = countSub(s, '.')
-  const padN = 3 - leftEmpty
-  if (leftEmpty > 3) {
-    return [padN, s.substr(leftEmpty -3)]
-  } else {
-    return [padN, Range(0, padN).map(() => '.').join('') + `${s}...`]
-  }
-
-  // const padN = 2 - s.substring(0, 2).split('')
-  //       .reduce((sum, c) => sum + (c === '.' ? 1 : 0), 0)
-  // const padN = s.substring(0, 3) === '...' ? 0 : (s.substring(0, 2) === '..' ? 1 : (s.substring(0, 1) === '.' ? 2 : 3))
-  // return [padN, Range(0, padN).map(() => '.').join('') + `${s}...`]
-  // return `..${s}..`a
-  // const leftPad = 2 - s.indexOf('#')
-  // const rightPad = 2 - s.split('').reverse().indexOf('#')
-
-  // return Range(0, leftPad).map(() => '.').join('') + s + Range(0, rightPad).map(() => '.').join('')
-}
-
-const GENS = 20
+const data = input[0].split(': ')[1].split('').map(c => c === '#' ? 1 : 0)
 
 const rules = input.slice(2).reduce((rules, rule) => {
   let [match, result] = rule.split(' => ')
+  match = match.split('').map(c => c === '#' ? '1' : '0').join('')
   result = result === '#'
-  return rules.set(match, result)
-}, Map())
+  rules[match] = result
+  return rules
+}, {})
 
-// function getState(pots, i) {
-//   let left = i < 2
-// }
 
-const get = (c, n) => Range(0, n).map(() => c).join('')
+let rules2 = Map()
 
-// console.log(JSON.stringify(rules.toJS(), null, 2))
-let offset = 0
-let padN
-const done = Range(1, GENS+1).map(gen => {
-  // console.log(pots);
-  [padN, pots] = pad(pots)
-  offset -= padN
+Range(0, 2).forEach(
+  i1 => Range(0, 2).forEach(
+    i2 => Range(0, 2).forEach(
+      i3 => Range(0, 2).forEach(
+        i4 => Range(0, 2).forEach(
+          i5 => {
+            rules2 = rules2.setIn([i1, i2, i3, i4, i5], rules[[i1, i2, i3, i4, i5].join('') ] ? 1 : 0)
+          }
+        )
+      )
+    )
+  )
+)
 
-  // console.log(gen, pots)
+rules2 = rules2.toJS()
 
-  pots = Range(0, pots.length).map(i => {
-    let neighbours = pots.substring(i - 2, i + 3) // TODO
-    // if (i < 2) {
-    //   neighbours = get('.', i - 2) + neighbours
-    // }
-    // if (i > pots.length -2) {
-    //   neighbours = neighbours + get('.', pots.length -i)
-    // }
 
-    // console.log(i, neighbours, rules.get(neighbours, 'not found') || 'found')
+const getState = (all, i) => {
+  return rules2[all[i-2] || 0][all[i-1] || 0][all[i] || 0][all[i+1] || 0][all[i+2] || 0]
+}
 
-    let alive = rules.get(neighbours, false) // .split(''))
 
-    return alive ? '#' : '.'
-  }).join('')
+const GENS = 1000000
+const PADDING = 5
+const EDGE = 2
 
-  console.log(gen, padN, pots)
-  // console.log()
-  return pots.split('').reduce((sum, c, i) => sum + (c === '#' ? 1 : 0), 0)
-})
-console.log(done)
-console.log(offset)
+let offset = -PADDING
 
-console.log(pots)
-console.log(pots.split('').reduce((sum, c, i) => sum + (c === '#' ? i-offset : 0), 0))
+let pots = new Uint8Array([...(new Array(PADDING).fill(0)), ...data, ...(new Array(PADDING).fill(0))])
+
+
+function sumPots (a, hmm=NaN) {
+  return Array.from(a).reduce((sum, c, i) => {
+    return sum + (c === 1 ? (i + hmm) : 0)
+  }, 0)
+
+}
+
+let newPots
+for (let i = 0; i < GENS; i++) {
+  newPots = pots.slice()
+
+  for (let x = 0; x < pots.length; x++) {
+    newPots[x] = getState(pots, x)
+  }
+
+  if (i % 1000000 === 0) { console.log(i, sumPots(pots, offset)) }
+
+  if (newPots.indexOf(1) <= EDGE) {
+    const tmp = new Uint8Array(newPots.length + PADDING)
+    tmp.set(newPots, PADDING)
+    newPots = tmp
+    offset -= PADDING
+  } else if (newPots.indexOf(1) > (PADDING * 2)) {
+    newPots = newPots.slice(PADDING)
+    offset += PADDING
+  }
+
+  if ((newPots.length - newPots.lastIndexOf(1)) <= EDGE) {
+    const tmp = new Uint8Array(newPots.length + PADDING)
+    tmp.set(newPots)
+    newPots = tmp
+  } else if ((newPots.length - newPots.lastIndexOf(1) - 1) >= (2 * PADDING)) {
+    newPots = newPots.slice(0, newPots.length - PADDING)
+  }
+
+  pots = newPots
+}
+var result = pots
+console.log(sumPots(pots, offset))
+console.log(result.slice(result.indexOf(1) -2, result.lastIndexOf(1) + 2).join(''))
