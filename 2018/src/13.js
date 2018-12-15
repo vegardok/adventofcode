@@ -9,7 +9,6 @@ const width = Math.max(...input.map(l => l.length))
 
 const MAP = input.map(l => Range(0, width).map(i => l[i] || ' ').toJS())
 
-
 const DIRECTIONS = {
   '<': 'LEFT',
   '>': 'RIGHT',
@@ -30,8 +29,8 @@ const MOVE = {
 }
 
 const POSSIBLE_MOVES = {
-  LEFT: (x, y) => [MOVE.UP(x, y), MOVE.LEFT(x, y), MOVE.DOWN(x, y)],
-  RIGHT: (x, y) => [MOVE.DOWN(x, y), MOVE.RIGHT(x, y), MOVE.UP(x, y)],
+  LEFT: (x, y) => [ MOVE.DOWN(x, y), MOVE.LEFT(x, y), MOVE.UP(x, y)],
+  RIGHT: (x, y) => [ MOVE.UP(x, y), MOVE.RIGHT(x, y), MOVE.DOWN(x, y)],
   DOWN: (x, y) => [ MOVE.RIGHT(x, y), MOVE.DOWN(x, y), MOVE.LEFT(x, y)],
   UP: (x, y) => [ MOVE.LEFT(x, y), MOVE.UP(x, y), MOVE.RIGHT(x, y)]
 }
@@ -55,54 +54,44 @@ const TURNS = {
   },
 }
 
-
-let trainStates = []
-
+let trainStates1 = []
+let trainStates2 = []
 Range(0, MAP.length).forEach(x => Range(0, width).forEach(y => {
   const d = DIRECTIONS[MAP[x][y]]
   if (d) {
     MAP[x][y] = ['LEFT', 'RIGHT'].indexOf(d) === -1 ? '|' : '-'
-    trainStates.push({ x, y, d, turns: 0 })
+    trainStates1.push({ x, y, d, turns: 0, loaded: trainStates1.length })
+    trainStates2.push({ x, y, d, turns: 0, loaded: trainStates2.length })
   }
 }))
 
-const crash = (trains) => trains.find(( train, index) => {
+const crash = (trains) => trains.filter(( train, index) => {
   return Boolean(trains.find((e, i) => i !== index && train.x === e.x && train.y === e.y))
 })
 
-const mod = (a, b) => {
-  var i = a % b
-  if (i < 0) {
-    return b +i
-  }
-  return i
-}
-
-// let rotate = (a, r=0) => new Array(a.length).fill(0).map((v,i) => a[mod(i - r, a.length)])
-
-const newPos = ({turns, x, y, d }) => {
+const newPos = ({turns, x, y, d, loaded }) => {
   const [nextX, nextY] = MOVE[d](x, y)
-
-
+  const nextTrack = MAP[nextX][ nextY]
   const atIntersection = MAP[nextX][nextY] === '+'
-  const atTurn = (['/' , '\\']).indexOf(MAP[nextX][ nextY]) !== -1
+  const atTurn = '/' === nextTrack || '\\' === nextTrack
 
   let newDirection = d
-  const moves = POSSIBLE_MOVES[d](nextX, nextY)
+
   if (atTurn) {
     newDirection = TURNS[d][MAP[nextX][nextY]]
   } else if (atIntersection) {
-    newDirection = moves[turns % 3][2]
+    const moves = POSSIBLE_MOVES[d](nextX, nextY)
+    newDirection = moves[turns][2]
   }
 
   return {
     x: nextX,
     y: nextY,
-    turns: atIntersection ? turns + 1 : turns,
-    d: newDirection
+    turns: atIntersection ? ((turns + 1) % 3) : turns,
+    d: newDirection,
+    loaded
   }
 }
-
 
 const print = (map, trains = []) => {
   return map.map((l, x) => {
@@ -113,17 +102,51 @@ const print = (map, trains = []) => {
   }).join('\n')
 }
 
-console.log(`Simulating ${trainStates.length} trains`)
-console.log(print(MAP, trainStates))
-let foundCrash = false
+
+let foundCrash = []
 let i = 0
 
-while (!foundCrash) {
+while (foundCrash.length === 0) {
+  trainStates1 = trainStates1.map(newPos)
 
-  if (i % 10000 === 0) { console.log(i) }
-  trainStates = trainStates.map(newPos)
-  foundCrash = crash(trainStates)
+  foundCrash = crash(trainStates1)
+  i++
+}
+console.log(`First train crash at ${i} (${foundCrash[0].y},${foundCrash[0].x})`)
+console.log()
+
+i=1
+while (trainStates2.length > 1) {
+  trainStates2.sort((a,b) => a.y === b.y ? a.x - b.x : a.y - b.y)
+
+  let newState = trainStates2.map(newPos)
+
+  const midTickCrash = newState.filter((newTrain, i1) => {
+    return trainStates2.find((oldTrain, i2) => {
+      return newTrain.x === oldTrain.x && newTrain.y === oldTrain.y && i1 < i2
+    })
+  })
+
+  const removeFromOldState = trainStates2.filter((oldTrain, i1) => {
+    return newState.find((newTrain, i2) => {
+      return newTrain.x === oldTrain.x && newTrain.y === oldTrain.y && i1 >= i2
+    })
+  })
+
+  if (midTickCrash.length) {
+    const train1 = newState.indexOf(midTickCrash[0])
+    const train2 = trainStates2.indexOf(removeFromOldState[0])
+    newState.splice(train2, 1)
+    newState.splice(train1, 1)
+  }
+
+  foundCrash = crash(newState)
+  if (foundCrash.length > 0) {
+    newState = newState.filter(t1 => !foundCrash.find(t2 => t1.x === t2.x && t1.y === t2.y))
+  }
+  trainStates2 = newState
+
   i++
 }
 
-console.log({ foundCrash })
+console.log(`Last train found after ${i} at (${trainStates2[0].y},${trainStates2[0].x})`)
