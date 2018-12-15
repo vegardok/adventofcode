@@ -42,14 +42,14 @@ function printState(players=[], incHealth=true) {
   return outMap
 }
 
-const getNeighborCoords = (y, x) => (
+var getNeighborCoords = (y, x) => (
   [[y-1, x],
    [y, x-1],
    [y, x+1],
    [y+1, x]]
 )
 
-function compareEnemies(a, b) {
+function sortEnemies(a, b) {
   if (a.health === b.health) {
     if (a.y === b.y) {
       return a.x - b.x
@@ -64,23 +64,11 @@ function getEnemy(player, players) {
   var coords = getNeighborCoords(player.y, player.x)
 
   var enemies = players
-      .filter(otherPlayer => otherPlayer.type !== player.type
-              && otherPlayer.health > 0
-              && coords.find(([y, x]) => x === otherPlayer.x
-                             && y === otherPlayer.y)) || []
-  return enemies.sort(compareEnemies)[0]
-}
-
-function sortReadingOrder(a, b) {
-  const y1 = a.prev.y
-  const x1 = a.prev.x
-  const y2 = b.prev.y
-  const x2 = b.prev.x
-
-  if (y1 === y2) {
-    return x1 - x2
-  }
-  return y1 - y2
+      .filter(otherPlayer => otherPlayer.type !== player.type)
+      .filter(otherPlayer => otherPlayer.health > 0)
+      .filter(enemy => coords.find(([y, x]) => x === enemy.x
+                                   && y === enemy.y)) || []
+  return enemies.sort(sortEnemies)[0]
 }
 
 function isFree(y, x, players) {
@@ -98,13 +86,32 @@ function getEnemyTargetPositions(player, players){
     .filter(([ty, tx]) => isFree(ty, tx, players))
 }
 
+function s(thing) {
+  if (Array.isArray(thing)) {
+    return `${thing[0]}.${thing[1]}`
+  }
+ return `${thing.y}.${thing.x}`
+
+}
+
 function horizonSize(a) {
   return a
     .map(l => l.reduce((sum, v) => sum + (v ? 1:0), 0))
     .reduce((sum, v) => sum + (v ? 1:0), 0)
 }
 
-const horizonToString = a => a.map(l => l.map(v => v ? '#' : ' ').join('')).join('\n')
+function sortReadingOrder(a, b) {
+  const y1 = parseInt(a.prev.split('.')[0])
+  const x1 = parseInt(a.prev.split('.')[1])
+  const y2 = parseInt(b.prev.split('.')[0])
+  const x2 = parseInt(b.prev.split('.')[1])
+
+  if (y1 === y2) {
+    return x1 - x2
+  }
+  return y1 - y2
+}
+
 
 function findReachableTargets(
   player,
@@ -113,6 +120,7 @@ function findReachableTargets(
   horizon = new Array(MAP.length).fill(0).map(() => new Array(MAP[0].length).fill(false)),
   path = [],
   depth=1) {
+
   if (depth > 100) {
     throw new Error('too deep')
   }
@@ -125,15 +133,14 @@ function findReachableTargets(
         .filter(([ty, tx]) => horizon[ty][tx])
 
   if (validTargets.length > 0) {
-    const stuff = validTargets.map(validTarget => {
-      let currentTarget = { y: validTarget[0], x: validTarget[1] }
+    const stuff = validTargets.map(target => {
+      let currentTarget = s(target)
 
       const fastPath = [{prev: currentTarget }]
-      while (currentTarget.y !== player.y || currentTarget.x !== player.x) {
+      while(currentTarget !== s(player)) {
 
         const currentTargetNextStep = path
-              .filter(p => p.current.y === currentTarget.y
-                      && p.current.x === currentTarget.x)
+              .filter(p => p.current === currentTarget)
               .sort(sortReadingOrder)[0]
 
         currentTarget = currentTargetNextStep.prev
@@ -144,40 +151,41 @@ function findReachableTargets(
       return fastPath[fastPath.length-2]
     })
 
-    const { x: nextX, y: nextY } = stuff.sort(sortReadingOrder)[0].prev
+    const nextStep = stuff.sort(sortReadingOrder)[0].prev
+
+    const nextY = parseInt(nextStep.split('.')[0])
+    const nextX = parseInt(nextStep.split('.')[1])
 
     return [[nextY, nextX], false]
   }
 
 
-  const expandedEdge = horizon.reduce(
-    ( accl1, l, y) => accl1.concat(l.reduce(
-      (accl2, v, x) => !v ? accl2 : [...accl2, { y, x }], [] )), [])
-
-    .reduce(( accl, { y: edgeY, x: edgeX }) => {
-
-      const newSteps = getNeighborCoords(edgeY, edgeX)
+  let edge = []
+  horizon.forEach((l, y) => l.forEach((visited, x) => {
+    if (visited) {
+      const newSteps = getNeighborCoords(y, x)
             .filter(([ny, nx]) => !horizon[ny][nx] && isFree(ny, nx, players))
+      if (newSteps.length > 0) {
+        edge = edge.concat(newSteps)
 
-      newSteps.forEach(([ny, nx]) => {
-        horizon[ny][nx] = true
-      })
+        const pathStuff = newSteps.map(current => ({
+          prev: s([y, x]),
+          current: s(current),
+          depth
+        }))
+        path = path.concat(pathStuff)
+      }
 
-      const pathStuff = newSteps.map(current => ({
-        prev: { y: edgeY, x: edgeX },
-        current: { y: current[0], x: current[1] },
-        depth
-      }))
+    }
+  }))
 
-      path = path.concat(pathStuff)
-      return newSteps.length > 0 ? [...accl, newSteps] : accl
-    }, [])
-
+  edge.forEach(([y, x]) => {
+    horizon[y][x] = true
+  })
 
   if (targets.length === 0) {
     targets = getEnemyTargetPositions(player, players)
   }
-
   if (horizonSize(horizon) === 0) {
     horizon[player.y][player.x] = true
     const nextSteps = getNeighborCoords(player.y, player.x)
@@ -186,15 +194,15 @@ function findReachableTargets(
       .map(([ny, nx]) => {
         horizon[ny][nx] = true
         return ({
-          prev: { y: player.y, x: player.x},
-          current: {y: ny, x: nx },
+          prev: s(player),
+          current: s([ny, nx]),
           depth
         })
       })
   }
 
 
-  if (depth > 1 && expandedEdge.length === 0) {
+  if (depth > 1 && edge.length === 0) {
     return [[player.y, player.x], false]
   }
 
@@ -261,6 +269,8 @@ function game1() {
       i++
     }
   }
+  console.log('\nDONE\n', i)
+  // console.log(printState(PLAYERS, false))
 
   const healthRemaining = players.filter(p => p.health > 0).reduce((s, p) => s + p.health, 0)
 
@@ -281,6 +291,7 @@ function game2() {
     let i = 0
     let stop = false
 
+
     try {
       while(!stop) {
         stop = round(players, true)
@@ -293,6 +304,9 @@ function game2() {
       return false
     }
 
+
+    console.log('\nDONE\n', i)
+    // console.log(printState(players, true))
     const healthRemaining = players.filter(p => p.health > 0).reduce((s, p) => s + p.health, 0)
 
     console.log(`Sollution 2: ${i} * ${healthRemaining} = ${i * healthRemaining}`)
@@ -301,6 +315,7 @@ function game2() {
 
   while(!run(boost)) { boost++ }
 }
+
 
 game1()
 game2()
