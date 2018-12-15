@@ -1,25 +1,30 @@
-var { Range } = require('immutable')
+function range(start, stop) {
+  const r = []
+  for(let i = start; i < stop; i++) {
+    r.push(i)
+  }
+  return r
+}
 
-var fs = require('fs')
+const fs = require('fs')
 
-var MAP =String(fs.readFileSync( __dirname + '/../inputs/15.txt')) //
+const MAP = String(fs.readFileSync( __dirname + '/../inputs/15.txt')) //
     .trim()
     .split('\n')
     .map(l => l.split(''))
 
-var PLAYERS = []
+const PLAYERS = []
 
-Range(0, MAP.length).forEach(y => {
-    return Range(0, MAP[y].length).forEach(
-      x => {
-        var c = MAP[y][x]
-        if (c === 'G' || c === 'E') {
-          PLAYERS.push({ type: c, health: 200, attack: 3, x, y })
-          MAP[y][x] = '.'
-        }
-
-      })
-  })
+range(0, MAP.length).forEach(y => {
+  return range(0, MAP[y].length).forEach(
+    x => {
+      const c = MAP[y][x]
+      if (c === 'G' || c === 'E') {
+        PLAYERS.push({ type: c, health: 200, attack: 3, x, y })
+        MAP[y][x] = '.'
+      }
+    })
+})
 
 function printState(players=[], incHealth=true) {
   var outMap = MAP.map((l, y) => l.map((c, x) => {
@@ -37,10 +42,12 @@ function printState(players=[], incHealth=true) {
   return outMap
 }
 
-var getNeighborCoords = (y, x) => ([[y-1, x],
-                                  [y, x-1],
-                                  [y, x+1],
-                                  [y+1, x]])
+var getNeighborCoords = (y, x) => (
+  [[y-1, x],
+   [y, x-1],
+   [y, x+1],
+   [y+1, x]]
+)
 
 function sortEnemies(a, b) {
   if (a.health === b.health) {
@@ -52,18 +59,15 @@ function sortEnemies(a, b) {
   }
   return a.health - b.health
 }
+
 function getEnemy(player, players) {
   var coords = getNeighborCoords(player.y, player.x)
 
   var enemies = players
       .filter(otherPlayer => otherPlayer.type !== player.type)
       .filter(otherPlayer => otherPlayer.health > 0)
-      .filter(enemy => coords.find(([y, x]) => x === enemy.x && y === enemy.y)) || []
-
-  // return enemies.sort((a, b) => {
-  //   return coords.findIndex(c => c.x === a.x && c.y === a.t) -
-  //     coords.findIndex(c => c.x === b.x && c.y === b.t)
-  // })[0]
+      .filter(enemy => coords.find(([y, x]) => x === enemy.x
+                                   && y === enemy.y)) || []
   return enemies.sort(sortEnemies)[0]
 }
 
@@ -132,7 +136,7 @@ function findReachableTargets(
     const stuff = validTargets.map(target => {
       let currentTarget = s(target)
 
-      let fastPath = [{prev: currentTarget }]
+      const fastPath = [{prev: currentTarget }]
       while(currentTarget !== s(player)) {
 
         const currentTargetNextStep = path
@@ -226,48 +230,92 @@ function tick(player, players) {
   return { ...player, stop }
 }
 
-function round(players) {
+function round(players, throwOnElfDeath = false) {
   players = players.sort((p1, p2) => p1.y === p2.y ? p1.x - p2.x : p1.y - p2.y)
 
   for (let playerTurn = 0; playerTurn < players.length; playerTurn++) {
     if (players[playerTurn].health > 0) {
-      let update = tick(players[playerTurn], players)
+      const update = tick(players[playerTurn], players)
 
       if (update.stop) {
+        if (throwOnElfDeath && players.find(p => p.type === 'E' && p.health <= 0)) {
+          throw new Error('elf died')
+        }
         return true
       }
       players[playerTurn] = update
-
+    }
+    if (throwOnElfDeath && players.find(p => p.type === 'E' && p.health <= 0)) {
+      throw new Error('elf died')
     }
   }
   return false
 }
 
-console.log(printState(PLAYERS))
 
-let i = 0
-let stop = false
 
-while(!stop) {
 
-  stop = round(PLAYERS)
-  if (!stop) {
-    i++
+
+function game1() {
+  let i = 0
+  let stop = false
+
+  const players = PLAYERS.map(p => ({ ...p }))
+
+  // console.log(printState(PLAYERS, false))
+  while(!stop) {
+    stop = round(players)
+    if (!stop) {
+      i++
+    }
   }
-  console.log(printState(PLAYERS, false))
+  console.log('\nDONE\n', i)
+  // console.log(printState(PLAYERS, false))
 
-  // console.log(i)
+  const healthRemaining = players.filter(p => p.health > 0).reduce((s, p) => s + p.health, 0)
 
+  console.log(`Sollution 1: ${i} * ${healthRemaining} = ${i * healthRemaining}`)
 }
 
-console.log('\nDONE\n', i)
-console.log(printState(PLAYERS, true))
 
-// not 180900
-// not 183915
-// not 83 * 2534 = 210322
-// not 84 * 2534 = 212856
+function game2() {
+  let boost = 1
 
-const healthRemaining = PLAYERS.filter(p => p.health > 0).reduce((s, p) => s + p.health, 0)
+  const run = (b) => {
 
-console.log(`Sollution 1: ${i} * ${healthRemaining} = ${i * healthRemaining}`)
+    const players = PLAYERS.map(p => ({
+      ...p,
+      attack: p.type === 'E' ? p.attack + b : p.attack
+    }))
+
+    let i = 0
+    let stop = false
+
+
+    try {
+      while(!stop) {
+        stop = round(players, true)
+        if (!stop) {
+          i++
+        }
+      }
+    } catch (e) {
+      console.log(`${e.message} at boost ${boost}`)
+      return false
+    }
+
+
+    console.log('\nDONE\n', i)
+    // console.log(printState(players, true))
+    const healthRemaining = players.filter(p => p.health > 0).reduce((s, p) => s + p.health, 0)
+
+    console.log(`Sollution 2: ${i} * ${healthRemaining} = ${i * healthRemaining}`)
+    return true
+  }
+
+  while(!run(boost)) { boost++ }
+}
+
+
+game1()
+game2()
