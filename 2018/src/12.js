@@ -40,53 +40,59 @@ const getState = (all, i) => {
   return rules2[all[i-2] || 0][all[i-1] || 0][all[i] || 0][all[i+1] || 0][all[i+2] || 0]
 }
 
-
-const GENS = 1000000
-const PADDING = 5
-const EDGE = 2
-
-let offset = -PADDING
-
-let pots = new Uint8Array([...(new Array(PADDING).fill(0)), ...data, ...(new Array(PADDING).fill(0))])
-
-
-function sumPots (a, hmm=NaN) {
-  return Array.from(a).reduce((sum, c, i) => {
-    return sum + (c === 1 ? (i + hmm) : 0)
+function sumPots (a, offset=NaN) {
+  return a.reduce((sum, c, i) => {
+    return sum + (c === 1 ? (i + offset) : 0)
   }, 0)
 
 }
 
-let newPots
-for (let i = 0; i < GENS; i++) {
-  newPots = pots.slice()
+const PADDING = 5
+const EDGE = 2
 
-  for (let x = 0; x < pots.length; x++) {
-    newPots[x] = getState(pots, x)
+function spreadFlowers(pots, gens) {
+  let newPots
+
+  let offset = -PADDING
+  for (let i = 0; i < gens; i++) {
+    newPots = pots.slice()
+
+    for (let x = 0; x < pots.length; x++) {
+      newPots[x] = getState(pots, x)
+    }
+
+    if (newPots.indexOf(1) <= EDGE) {
+      newPots = [...new Array(PADDING).fill(0), ...newPots]
+      offset -= PADDING
+    } else if (newPots.indexOf(1) > (PADDING * 2)) {
+      newPots = newPots.slice(PADDING)
+      offset += PADDING
+    }
+
+    if ((newPots.length - newPots.lastIndexOf(1)) <= EDGE) {
+      newPots = [...newPots, ...new Array(PADDING).fill(0)]
+    } else if ((newPots.length - newPots.lastIndexOf(1) - 1) >= (2 * PADDING)) {
+      newPots = newPots.slice(0, newPots.length - PADDING)
+    }
+
+    pots = newPots
   }
-
-  if (i % 1000000 === 0) { console.log(i, sumPots(pots, offset)) }
-
-  if (newPots.indexOf(1) <= EDGE) {
-    const tmp = new Uint8Array(newPots.length + PADDING)
-    tmp.set(newPots, PADDING)
-    newPots = tmp
-    offset -= PADDING
-  } else if (newPots.indexOf(1) > (PADDING * 2)) {
-    newPots = newPots.slice(PADDING)
-    offset += PADDING
-  }
-
-  if ((newPots.length - newPots.lastIndexOf(1)) <= EDGE) {
-    const tmp = new Uint8Array(newPots.length + PADDING)
-    tmp.set(newPots)
-    newPots = tmp
-  } else if ((newPots.length - newPots.lastIndexOf(1) - 1) >= (2 * PADDING)) {
-    newPots = newPots.slice(0, newPots.length - PADDING)
-  }
-
-  pots = newPots
+  return [ pots, offset ]
 }
-var result = pots
-console.log(sumPots(pots, offset))
-console.log(result.slice(result.indexOf(1) -2, result.lastIndexOf(1) + 2).join(''))
+
+let initialPots = [...(new Array(PADDING).fill(0)), ...data, ...(new Array(PADDING).fill(0))]
+
+const [result1, offset] = spreadFlowers(initialPots.slice(), 20)
+
+console.log(`12 part 1: ${sumPots(result1, offset)}`, offset)
+
+const ROUNDS = 1000
+
+const [pots2, offset2] = spreadFlowers(initialPots.slice(), ROUNDS)
+const result2 = sumPots(pots2, offset2)
+const [pots3, offset3] = spreadFlowers(initialPots.slice(), ROUNDS * 2)
+const result3 = sumPots(pots3, offset3)
+
+const atGenX = gens => result2 % (result3 - result2) + (((result3 - result2) / ROUNDS) * gens)
+
+console.log(console.log(`12 part 2: ${atGenX(50000000000)}`))
