@@ -90,12 +90,30 @@ function s(thing) {
 
 }
 
-// TODO: save path
+function horizonSize(a) {
+  return a
+    .map(l => l.reduce((sum, v) => sum + (v ? 1:0), 0))
+    .reduce((sum, v) => sum + (v ? 1:0), 0)
+}
+
+function sortReadingOrder(a, b) {
+  const y1 = parseInt(a.prev.split('.')[0])
+  const x1 = parseInt(a.prev.split('.')[1])
+  const y2 = parseInt(b.prev.split('.')[0])
+  const x2 = parseInt(b.prev.split('.')[1])
+
+  if (y1 === y2) {
+    return x1 - x2
+  }
+  return y1 - y2
+}
+
+
 function findReachableTargets(
   player,
   players,
   targets = [],
-  horizon = [],
+  horizon = new Array(MAP.length).fill(0).map(() => new Array(MAP[0].length).fill(false)),
   path = [],
   depth=1) {
 
@@ -103,98 +121,88 @@ function findReachableTargets(
     throw new Error('too deep')
   }
 
+  if (players.filter(p => p.type !== player.type && p.health > 0).length === 0) {
+    return [[player.y, player.x], true]
+  }
 
-  const target = targets
-        .filter(([ ty, tx]) => horizon
-                .find(([hy, hx]) => hy === ty && hx === tx))
-        .sort(([y1, x1], [y2, x2]) => y1 == y2 ? x1 - x2 : y1 - y2)[0]
+  const validTargets = targets
+        .filter(([ty, tx]) => horizon[ty][tx])
 
-  if (target) {
-    let fastestPaths = path.filter(p => p.current === s(target))
+  if (validTargets.length > 0) {
+    const stuff = validTargets.map(target => {
+      let currentTarget = s(target)
 
-    for (let i = depth - 2; i > 0; i--) {
-      const toBeAdded = path
-            .filter(p => p.depth == i )
-            .filter(p => fastestPaths.find(fp => fp.depth === (i + 1)
-                                           && fp.prev === p.current))
-      fastestPaths = fastestPaths.concat(toBeAdded)
+      let fastPath = [{prev: currentTarget }]
+      while(currentTarget !== s(player)) {
+
+        const currentTargetNextStep = path
+              .filter(p => p.current === currentTarget)
+              .sort(sortReadingOrder)[0]
+
+        currentTarget = currentTargetNextStep.prev
+
+        fastPath.push(currentTargetNextStep)
+      }
+
+      return fastPath[fastPath.length-2]
+    })
+
+    const nextStep = stuff.sort(sortReadingOrder)[0].prev
+
+    const nextY = parseInt(nextStep.split('.')[0])
+    const nextX = parseInt(nextStep.split('.')[1])
+
+    return [[nextY, nextX], false]
+  }
+
+
+  let edge = []
+  horizon.forEach((l, y) => l.forEach((visited, x) => {
+    if (visited) {
+      const newSteps = getNeighborCoords(y, x)
+            .filter(([ny, nx]) => !horizon[ny][nx] && isFree(ny, nx, players))
+      if (newSteps.length > 0) {
+        edge = edge.concat(newSteps)
+
+        const pathStuff = newSteps.map(current => ({
+          prev: s([y, x]),
+          current: s(current),
+          depth
+        }))
+        path = path.concat(pathStuff)
+      }
+
     }
+  }))
 
-    const nextStepS = fastestPaths
-          .filter(p => p.depth === 1)
-          .sort((a,b) => a.current.localeCompare(b.current))[0].current
-
-    const nextStep = [
-      parseInt(nextStepS.split('.')[0]),
-      parseInt(nextStepS.split('.')[1])
-    ]
-
-    return [target, nextStep, depth]
-  }
-
-
-
-  const edge = horizon.filter(([hy, hx]) => {
-    const nextSteps = getNeighborCoords(hy, hx)
-          .filter(([y, x]) => isFree(y, x, players))
-
-    const newSteps = nextSteps.filter(
-      ([ny, nx]) => !horizon.find(([hhy, hhx]) => ny === hhy && nx === hhx))
-
-    // console.log({ nextSteps, newSteps })
-    // process.exit(0)
-    return newSteps.length > 0
+  edge.forEach(([y, x]) => {
+    horizon[y][x] = true
   })
-
-
-
-  if (player.type === 'G' && player.y === 9 && player.x === 7) {
-    console.log('hello', depth, edge.length, horizon.length, path.length)
-  }
-
-  const additionalHorizon = edge
-        .map((prev) => {
-          const [hy, hx] = prev
-          const nextSteps = getNeighborCoords(hy, hx)
-                .filter(([nhy, nhx]) =>
-                        !horizon.find(([hhy, hhx]) => hhy === nhy && hhx === nhx)
-                        && isFree(nhy, nhx, players))
-
-          const pathStuff = nextSteps.map(current => ({
-            prev: s(prev),
-            current: s(current),
-            depth
-          }))
-          path = path.concat(pathStuff)
-          return nextSteps
-        })
-        .reduce((coords, currentCoords) => coords.concat(currentCoords), [])
-
-  if (player.type === 'G' && player.y === 9 && player.x === 7) {
-    console.log(additionalHorizon.length)
-  }
-
 
   if (targets.length === 0) {
     targets = getEnemyTargetPositions(player, players)
   }
-  if (horizon.length === 0) {
-    horizon = getNeighborCoords(player.y, player.x)
-      .filter(([y, x]) => isFree(y, x, players))
-
-    path = path.concat(horizon.map(current => ({
-      prev: s(player),
-      current: s(current),
-      depth
-    })))
+  if (horizonSize(horizon) === 0) {
+    horizon[player.y][player.x] = true
+    const nextSteps = getNeighborCoords(player.y, player.x)
+          .filter(([ny, nx]) => isFree(ny, nx, players))
+    path = nextSteps
+      .map(([ny, nx]) => {
+        horizon[ny][nx] = true
+        return ({
+          prev: s(player),
+          current: s([ny, nx]),
+          depth
+        })
+      })
   }
 
-  const newHorizon = horizon.concat(additionalHorizon)
-  if (depth > 1 && newHorizon.length === horizon.length) {
-    return [[], [player.y, player.x], depth]
+
+  if (depth > 1 && edge.length === 0) {
+    return [[player.y, player.x], false]
   }
 
-  return findReachableTargets(player, players,targets, newHorizon, path, depth+1)
+  return findReachableTargets(player, players,targets, horizon, path, depth+1)
 }
 
 
@@ -204,9 +212,8 @@ function tick(player, players) {
     enemy.health -= player.attack
     return player
   }
-  // console.log(player)
-  const [target, nextStep, steps] = findReachableTargets(player, players)
-  // console.log({target, nextStep, steps})
+
+  const [nextStep, stop] = findReachableTargets(player, players)
 
   player.y = nextStep[0]
   player.x = nextStep[1]
@@ -215,45 +222,51 @@ function tick(player, players) {
   if (enemy) {
     enemy.health -= player.attack
   }
-  return player
+
+  return { ...player, stop }
 }
 
 function round(players) {
   players = players.sort((p1, p2) => p1.y === p2.y ? p1.x - p2.x : p1.y - p2.y)
 
-  Range(0, players.length).forEach(playerTurn => {
-
+  for (let playerTurn = 0; playerTurn < players.length; playerTurn++) {
     if (players[playerTurn].health > 0) {
-      players[playerTurn] = tick(players[playerTurn], players)
+      let update = tick(players[playerTurn], players)
+
+      if (update.stop) {
+        return true
+      }
+      players[playerTurn] = update
+
     }
-  })
+  }
+  return false
 }
 
 console.log(printState(PLAYERS))
 
 let i = 0
-let bothRemaining = PLAYERS.find(p => p.type === 'G' && p.health > 0)
-    && PLAYERS.find(p => p.type === 'E' && p.health > 0)
+let stop = false
 
-while(bothRemaining && i < 60) {
+while(!stop) {
 
-  console.log(i, '---')
-
-  round(PLAYERS)
-  console.log(printState(PLAYERS))
-  bothRemaining = PLAYERS.find(p => p.type === 'G' && p.health > 0) && PLAYERS.find(p => p.type === 'E' && p.health > 0)
-
-  if (bothRemaining) {
+  stop = round(PLAYERS)
+  if (!stop) {
     i++
   }
+  console.log(printState(PLAYERS, false))
+
+  // console.log(i)
 
 }
 
+console.log('\nDONE\n', i)
+console.log(printState(PLAYERS, true))
 
-
-console.log('done', i)
-console.log(printState(PLAYERS, false))
-
+// not 180900
+// not 183915
+// not 83 * 2534 = 210322
+// not 84 * 2534 = 212856
 
 const healthRemaining = PLAYERS.filter(p => p.health > 0).reduce((s, p) => s + p.health, 0)
 
