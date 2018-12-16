@@ -113,7 +113,8 @@ function sortReadingOrder(a, b) {
 }
 
 
-function findReachableTargets(
+// Returns [[nextY, nextX], stopTheGame]
+function getNextState(
   player,
   players,
   targets = [],
@@ -129,11 +130,10 @@ function findReachableTargets(
     return [[player.y, player.x], true]
   }
 
-  const validTargets = targets
-        .filter(([ty, tx]) => horizon[ty][tx])
+  const validTargets = targets.filter(([ty, tx]) => horizon[ty][tx])
 
   if (validTargets.length > 0) {
-    const stuff = validTargets.map(target => {
+    const firstSteps = validTargets.map(target => {
       let currentTarget = s(target)
 
       const fastPath = [{prev: currentTarget }]
@@ -151,7 +151,7 @@ function findReachableTargets(
       return fastPath[fastPath.length-2]
     })
 
-    const nextStep = stuff.sort(sortReadingOrder)[0].prev
+    const nextStep = firstSteps.sort(sortReadingOrder)[0].prev
 
     const nextY = parseInt(nextStep.split('.')[0])
     const nextX = parseInt(nextStep.split('.')[1])
@@ -206,7 +206,7 @@ function findReachableTargets(
     return [[player.y, player.x], false]
   }
 
-  return findReachableTargets(player, players,targets, horizon, path, depth+1)
+  return getNextState(player, players,targets, horizon, path, depth+1)
 }
 
 
@@ -217,7 +217,7 @@ function tick(player, players) {
     return player
   }
 
-  const [nextStep, stop] = findReachableTargets(player, players)
+  const [nextStep, stop] = getNextState(player, players)
 
   player.y = nextStep[0]
   player.x = nextStep[1]
@@ -315,7 +315,6 @@ function game2() {
 
   while(!run(boost)) { boost++ }
 }
-
 
 game1()
 game2()
