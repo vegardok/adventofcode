@@ -1,4 +1,4 @@
-(ns aoc-2019.3)
+(ns aoc-2019.4)
 (use 'clojure.test)
 
 (def input (range 138307 654504))
