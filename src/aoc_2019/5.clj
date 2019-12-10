@@ -6,6 +6,6 @@
 (let []
   (println "Day 5")
   (println "Part 1")
-  (c/computer-loop input/day5-input) ;; 1 => 15508323
-  (c/computer-loop input/day5-input) ;; 5 => 9006327
+  (c/computer-loop input/day5-input (c/gen-in-fn ["1"])) ;; 1 => 15508323
+  (c/computer-loop input/day5-input (c/gen-in-fn ["5"])) ;; 5 => 9006327
   nil)
