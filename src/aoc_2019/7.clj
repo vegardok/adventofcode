@@ -1,80 +1,145 @@
 (ns aoc-2019.7
   (:require [clojure.test :as test]
+            [clojure.core.async :refer
+             [<! <!! >! >!! alt! alt!! alts! alts!! chan go onto-chan thread]]
             [clojure.math.combinatorics :as combo]
             [aoc-2019.computer :as comp]
-            [aoc-2019.inputs :as input]))
-
-(def amp-test-software-1
-  [3 15 3 16 1002 16 10 16 1 16 15 15 4 15 99 0 0])
-(def amp-test-software-2
-  [3 23 3 24 1002 24 10 24 1002 23 -1 23
-   101 5 23 23 1 24 23 23 4 23 99 0 0])
-(def amp-test-software-3
-  [3 31 3 32 1002 32 10 32 1001 31 -2 31 1007 31 0 33
-   1002 33 7 33 1 33 31 31 1 32 31 31 4 31 99 0 0 0])
-(def amp-test-software-4
-  [3 26 1001 26 -4 26 3 27 1002 27 2 27 1 27 26
-   27 4 27 1001 28 -1 28 1005 28 6 99 0 0 5])
-(def amp-test-software-5
-  [3 52 1001 52 -5 52 3 53 1 52 56 54 1007 54 5 55 1005 55 26 1001 54
-   -5 54 1105 1 12 1 53 54 53 1008 54 0 55 1001 55 1 55 2 53 55 53 4
-   53 1001 56 -1 56 1005 56 6 99 0 0 0 0 10])
-
-
-(defn gen-in-fn [inputs]
-  (let [inputs (atom inputs)]
-    (fn []
-      (let [[val] (deref inputs)]
-        (swap! inputs rest)
-        val))))
-
-(defn gen-out-fn []
-  (let [a (atom nil)]
-    (fn
-      ([] (deref a))
-      ([v] (swap! a (fn [&rest] v))))))
-
-(defn gen-channel
-  ([] (gen-channel []))
-  ([initial-state]
-   (let [state (atom initial-state)]
-     (fn
-       ([] (let [[out & tail] (deref state)]
-             (swap! state rest)
-             (str out)))
-       ([val] (swap! state #(conj % val)))))))
-
+            [aoc-2019.inputs :as inputs]))
 
 (defn amp-circuit [a b c d e software]
-  (let [a-channel (gen-channel (lazy-seq [a 0]))
-        b-channel (gen-channel (lazy-seq [b (a-channel)]))
-        c-channel (gen-channel (lazy-seq [c (b-channel)]))
-        d-channel (gen-channel (lazy-seq [d (c-channel)]))
-        e-channel (gen-channel (lazy-seq [e (d-channel)]))]
-    (comp/computer-loop software a-channel a-channel)
-    (comp/computer-loop software b-channel b-channel)
-    (comp/computer-loop software c-channel c-channel)
-    (comp/computer-loop software d-channel d-channel)
-    (comp/computer-loop software e-channel e-channel)
-    (Integer/parseInt (e-channel))))
+  (let [a-in (chan 2)
+        a-out (chan 1)
+        b-out (chan 1)
+        c-out (chan 1)
+        d-out (chan 1)
+        e-out (chan)
+        error-output-channel (chan)]
+
+    (>!! a-in a)
+    (>!! a-in 0)
+    (>!! a-out b)
+    (>!! b-out c)
+    (>!! c-out d)
+    (>!! d-out e)
+
+    (thread
+      (try
+        (comp/computer-loop software #(<!! a-in) #(>!! a-out %))
+        (catch Exception e (>!! error-output-channel e))))
+    (thread
+      (try
+        (comp/computer-loop software #(<!! a-out) #(>!! b-out %))
+        (catch Exception e (>!! error-output-channel e))))
+    (thread
+      (try
+        (comp/computer-loop software #(<!! b-out) #(>!! c-out %))
+        (catch Exception e (>!! error-output-channel e))))
+    (thread
+      (try
+        (comp/computer-loop software #(<!! c-out) #(>!! d-out %))
+        (catch Exception e (>!! error-output-channel e))))
+    (thread
+      (try
+        (comp/computer-loop software #(<!! d-out) #(>!! e-out %))
+        (catch Exception e (>!! error-output-channel e))))
+
+    (let [[v p] (alts!! [e-out error-output-channel])] v)))
 
 (test/deftest amp-test-software-test
-  (test/is (= 43210 (amp-circuit 4 3 2 1 0 amp-test-software-1)))
-  (test/is (= 54321 (amp-circuit 0 1 2 3 4 amp-test-software-2)))
-  (test/is (= 65210 (amp-circuit 1 0 4 3 2 amp-test-software-3))))
+  (test/is (= 43210 (amp-circuit 4 3 2 1 0 inputs/day7-amp-test-software-1)))
+  (test/is (= 54321 (amp-circuit 0 1 2 3 4 inputs/day7-amp-test-software-2)))
+  (test/is (= 65210 (amp-circuit 1 0 4 3 2 inputs/day7-amp-test-software-3))))
 
-
-(defn find-max-thrust [software]
-  (let [settings (combo/permutations [0 1 2 3 4])]
+(defn find-max-thrust [circuit software settings]
+  (let [settings (combo/permutations settings)]
     (reduce max (map
      #(let [[a b c d e] %]
-        (amp-circuit a b c d e software)) settings))))
+        (circuit a b c d e software)) settings))))
 
 (test/deftest find-max-thrust-test
-  (test/is (= 43210 (find-max-thrust amp-test-software-1)))
-  (test/is (= 54321 (find-max-thrust amp-test-software-2)))
-  (test/is (= 65210 (find-max-thrust amp-test-software-3)))
-  (test/is (= 22012 (find-max-thrust input/day7-input))))
+  (test/is
+   (= 43210
+      (find-max-thrust amp-circuit inputs/day7-amp-test-software-1 [0 1 2 3 4])))
+  (test/is
+   (= 54321
+      (find-max-thrust amp-circuit inputs/day7-amp-test-software-2 [0 1 2 3 4])))
+  (test/is
+   (= 65210
+      (find-max-thrust amp-circuit inputs/day7-amp-test-software-3 [0 1 2 3 4])))
+  (test/is
+   (= 22012
+      (find-max-thrust amp-circuit inputs/day7-input [0 1 2 3 4]))))
 
-;; (println "Day 7")
-;; (println "Part 1" (find-max-thrust input/day7-input))
+(defn amp-feedback-circuit [a b c d e software]
+  (let [a-out (chan 1)
+        b-out (chan 1)
+        c-out (chan 1)
+        d-out (chan 1)
+        e-out (chan 2)
+        exit-out (chan)
+        error-output-channel (chan)]
+
+    (>!! e-out a)
+    (>!! e-out 0)
+    (>!! a-out b)
+    (>!! b-out c)
+    (>!! c-out d)
+    (>!! d-out e)
+
+    (thread
+      (try
+        (comp/computer-loop
+         software #(<!! e-out) #(>!! a-out %) #(>!! exit-out %))
+        (catch Exception e (>!! error-output-channel e))))
+    (thread
+      (try
+        (comp/computer-loop
+         software #(<!! a-out) #(>!! b-out %) #(>!! exit-out %))
+        (catch Exception e (>!! error-output-channel e))))
+    (thread
+      (try
+        (comp/computer-loop
+         software #(<!! b-out) #(>!! c-out %) #(>!! exit-out %))
+        (catch Exception e (>!! error-output-channel e))))
+    (thread
+      (try
+        (comp/computer-loop
+         software #(<!! c-out) #(>!! d-out %) #(>!! exit-out %))
+        (catch Exception e (>!! error-output-channel e))))
+    (thread
+      (try
+        (comp/computer-loop
+         software #(<!! d-out) #(>!! e-out %) #(>!! exit-out %))
+        (catch Exception e (>!! error-output-channel e))))
+
+    (<!! exit-out)
+    (<!! exit-out)
+    (<!! exit-out)
+    (<!! exit-out)
+    (<!! exit-out)
+    (<!! e-out)
+    ))
+
+
+(test/deftest feedback-test
+  (test/is
+   (= 139629729
+      (amp-feedback-circuit 9 8 7 6 5 inputs/day7-amp-test-software-4)))
+  (test/is
+   (= 139629729
+      (find-max-thrust amp-feedback-circuit inputs/day7-amp-test-software-4 [5 6 7 8 9])))
+  (test/is
+   (= 18216
+      (amp-feedback-circuit 9 7 8 5 6 inputs/day7-amp-test-software-5)))
+  (test/is
+   (= 18216
+      (find-max-thrust amp-feedback-circuit inputs/day7-amp-test-software-5 [5 6 7 8 9])))
+
+  (test/is
+   (= 4039164
+      (find-max-thrust amp-feedback-circuit inputs/day7-input [5 6 7 8 9]))))
+
+
+(println "Day 7")
+(println "Part 1" (find-max-thrust amp-circuit inputs/day7-input [0 1 2 3 4]))
+(println "Part 2" (find-max-thrust amp-feedback-circuit inputs/day7-input [5 6 7 8 9]))

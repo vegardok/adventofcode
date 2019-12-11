@@ -21,7 +21,7 @@
   (fn [a-mode b-mode c-mode]
     (fn [pointer program]
       (let [out (input (+ pointer 1) program :imm-mode)]
-        {:program (assoc program out (Integer/parseInt (in-fn)))
+        {:program (assoc program out (in-fn))
          :pointer (+ pointer 2) } ))))
 
 (defn- print-out [out-fn]
@@ -31,9 +31,11 @@
         (out-fn a)
         { :program program :pointer (+ pointer 2) }))))
 
-(defn- exit [a-mode b-mode c-mode]
-  (fn [pointer program]
-    {:program program :pointer nil }))
+(defn- exit [out-fn]
+  (fn [a-mode b-mode c-mode]
+    (fn [pointer program]
+      (out-fn { :done pointer })
+      {:program program :pointer nil })))
 
 (defn- jump [jump-fn]
   (fn [a-mode b-mode c-mode]
@@ -52,7 +54,7 @@
         {:program (assoc program out (if (comp-fn a b) 1 0))
          :pointer (+ pointer 4) }))))
 
-(defn parse-op [op in-fn out-fn]
+(defn parse-op [op in-fn out-fn exit-out-fn]
   (let [ops
         {
          "01" (math-fn +)
@@ -63,7 +65,7 @@
          "06" (jump #(= 0 %))
          "07" (compare-op #(< % %2))
          "08" (compare-op #(= % %2))
-         "99" exit
+         "99" (exit exit-out-fn)
          }
         str-op (format "%05d" op)
         op (clojure.string/join (drop 3 str-op))
@@ -75,16 +77,25 @@
     ((get ops op) mode-a mode-b mode-c)))
 
 (defn computer-loop
-  ([program] (computer-loop 0 program read-line println))
-  ([program in-fn out-fn] (computer-loop 0 program in-fn out-fn))
-  ([pointer program in-fn out-fn]
-   (let [op (parse-op (nth program pointer) in-fn out-fn)
+  ([program]
+   (computer-loop
+    0
+    program
+    #(Integer/parseInt (read-line))
+    println
+    identity))
+  ([program in-fn out-fn exit-out-fn]
+   (computer-loop 0 program in-fn out-fn exit-out-fn))
+  ([program in-fn out-fn]
+   (computer-loop 0 program in-fn out-fn identity))
+  ([pointer program in-fn out-fn exit-out-fn]
+   (let [op (parse-op (nth program pointer) in-fn out-fn exit-out-fn)
          next-step (op pointer program)
          next-pointer (get next-step :pointer)
          next-program (get next-step :program)]
      (if (not next-pointer)
        program
-       (recur next-pointer next-program in-fn out-fn)))))
+       (recur next-pointer next-program in-fn out-fn exit-out-fn)))))
 
 (test/deftest examples-part-1
   (test/is (= (computer-loop [1,0,0,0,99]) [2,0,0,0,99]))
