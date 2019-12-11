@@ -20,11 +20,12 @@
 (correct-fuel-requirement 100756) ;; 50346
 
 
-;; Part 1
-(time
- (let [part1 (reduce + (map fuel-requirement in/input-day1))
-       part2 (reduce + (map correct-fuel-requirement in/input-day1))]
-   (println "Day 1")
-   (println "Part 1 :" part1 ) ;; 33692
-   (println "Part 2 :" part2 ) ;; 5051054
-   ))
+(defn day1-result []
+  ;; Part 1
+  (time
+   (let [part1 (reduce + (map fuel-requirement in/input-day1))
+         part2 (reduce + (map correct-fuel-requirement in/input-day1))]
+     (println "Day 1")
+     (println "Part 1 :" part1 ) ;; 33692
+     (println "Part 2 :" part2 ) ;; 5051054
+     )))
