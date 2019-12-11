@@ -10,9 +10,9 @@
           (fn [noun])))
 
 (defn find-key
-  ([key] (find-key key 99 99 0 0))
+  ([key] (find-key key 99 99 0 0)) ;; (assoc program 1 noun 2 verb)
   ([key max-noun max-verb current-noun current-verb]
-   (if (= key (first (c/computer-loop in/input-day2 current-noun current-verb)))
+   (if (= key (first (c/computer-loop (assoc in/input-day2 1 current-noun 2 current-verb))))
      [current-noun current-verb]
      (if (= current-verb max-verb)
        (recur key max-noun max-verb (inc current-noun) 0)
@@ -23,6 +23,7 @@
        verb 2
        keys (find-key 19690720)]
    (println "Day 2")
-   (println "Part 1 ", (first (c/computer-loop in/input-day2 noun verb))) ;; 10566835
+    ;; 10566835
+   (println "Part 1 ", (first (c/computer-loop (assoc in/input-day2 1 noun 2 verb))))
    (println "Part 2 ", (+ (* 100 (nth keys 0)) (nth keys 1))) ;; 2347
    ))

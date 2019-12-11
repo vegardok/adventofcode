@@ -1,4 +1,5 @@
-(ns aoc-2019.3)
+(ns aoc-2019.3
+  (:require [aoc-2019.inputs :as inputs]))
 (use 'clojure.test
      'clojure.set)
 
@@ -67,13 +68,14 @@
         distances (map manhatten-distance intersections)]
     (reduce min distances)))
 
+
 (deftest examples-part1
-  (is (= 6 (closest-intersection (get input-test0 :first) (get input-test0 :second))))
-  (is (= 159 (closest-intersection (get input-test1 :first) (get input-test1 :second))))
-  (is (= 135 (closest-intersection (get input-test2 :first) (get input-test2 :second)))))
+  (is (= 6 (closest-intersection (get inputs/day3-input-test0 :first) (get inputs/day3-input-test0 :second))))
+  (is (= 159 (closest-intersection (get inputs/day3-input-test1 :first) (get inputs/day3-input-test1 :second))))
+  (is (= 135 (closest-intersection (get inputs/day3-input-test2 :first) (get inputs/day3-input-test2 :second)))))
 
 (println "Day 3")
-(println "Part 1" (closest-intersection (get input :first) (get input :second)))
+(println "Part 1" (closest-intersection (get inputs/day3-input :first) (get inputs/day3-input :second)))
 
 
 
@@ -84,7 +86,7 @@
     (reduce min (map (fn [pos] (+ 2 (.indexOf first-path pos) (.indexOf second-path pos))) intersections))))
 
 (deftest closest-intersection-walk-test
-  (is (= 610 (closest-intersection-walk input-test3)))
-  (is (= 410 (closest-intersection-walk input-test4))))
+  (is (= 610 (closest-intersection-walk inputs/day3-input-test3)))
+  (is (= 410 (closest-intersection-walk inputs/day3-input-test4))))
 
-(println "Part 2", (closest-intersection-walk input))
+(println "Part 2", (closest-intersection-walk inputs/day3-input))

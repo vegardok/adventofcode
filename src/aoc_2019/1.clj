@@ -29,3 +29,4 @@
      (println "Part 1 :" part1 ) ;; 33692
      (println "Part 2 :" part2 ) ;; 5051054
      )))
+(day1-result)
