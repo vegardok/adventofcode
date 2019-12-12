@@ -9,8 +9,17 @@
    (case mode
      :pos-mode (nth program (nth program pointer 0) 0)
      :imm-mode (nth program pointer 0)
-     :rel-mode (nth program (+ rel-offset (nth program pointer 0) 0) 0)
-     )))
+     :rel-mode (nth program (+ rel-offset (nth program pointer 0) 0) 0))))
+
+(defn- output [program pointer mode rel-offset n]
+  (case mode
+    \0 (nth program (+ pointer n))
+    \2 (+ rel-offset (nth program (+ pointer n)))))
+
+(defn math-output [program pointer mode rel-offset]
+  (output program pointer mode rel-offset 3))
+(defn read-output [program pointer mode rel-offset]
+  (output program pointer mode rel-offset 1))
 
 (defn- safe-program-write [program address value]
   (let [program (if (<= (count program) address)
@@ -22,32 +31,27 @@
 (defn- math-fn [func mode rel-offset]
   (fn [a b]
     (fn [pointer program]
-      (let [out (case mode
-                  \0 (nth program (+ pointer 3))
-                  \2 (+ rel-offset (nth program (+ pointer 3))))]
+      (let [out (math-output program pointer mode rel-offset)]
         {:program (safe-program-write program out (func (a) (b)))
          :pointer (+ pointer 4) } ))))
 
 (defn- read-input [in-fn mode rel-offset]
-  (fn [a b]
+  (fn [_ _]
     (fn [pointer program]
-      (let [out (case mode
-                  \0 (nth program (+ pointer 1))
-                  \2 (+ rel-offset (nth program (+ pointer 1))))]
+      (let [out (read-output program pointer mode rel-offset)]
         {:program (safe-program-write program out (in-fn))
          :pointer (+ pointer 2) } ))))
 
 (defn- print-out [out-fn]
-  (fn [a b]
+  (fn [a _]
     (fn [pointer program]
       (out-fn (a))
       { :program program :pointer (+ pointer 2) })))
 
 (defn- exit [out-fn]
-  (fn [a b]
+  (fn [_ _]
     (fn [pointer program]
-      (out-fn { :done pointer })
-      { })))
+      (out-fn { :done pointer }) { })))
 
 (defn- jump [jump-fn]
   (fn [a b]
@@ -57,18 +61,14 @@
 (defn- compare-op [comp-fn mode rel-offset]
   (fn [a b]
     (fn [pointer program]
-      (let [out (case mode
-                  \0 (nth program (+ pointer 3))
-                  \2 (+ rel-offset (nth program (+ pointer 3))))]
+      (let [out (math-output program pointer mode rel-offset)]
         {:program (safe-program-write program out (if (comp-fn (a) (b)) 1 0))
          :pointer (+ pointer 4) }))))
 
 (defn- set-rel-offset [rel-offset]
-  (fn [a b]
+  (fn [a _]
     (fn [pointer program]
-      {:pointer (+ pointer 2)
-       :rel-offset (+ rel-offset (a))
-       })))
+      {:pointer (+ pointer 2) :rel-offset (+ rel-offset (a)) })))
 
 (defn parse-op [pointer program in-fn out-fn exit-out-fn rel-offset]
   (let [
