@@ -25,13 +25,8 @@
          to (+ from (* width height))]
      (slice image from to))))
 
-(let [best-layer (apply min-key (fn [l]
-                                  (count (filter #(= 0 %) (layer image l)))) (range layers))
-      one-count (count (filter #(= 1 %) (layer image best-layer)))
-      two-count (count (filter #(= 2 %) (layer image best-layer)))
-      result (* one-count two-count)]
-  (println "Day 8")
-  (println "Part 1 " result)) ;; 1792
+
+
 
 ;; 0 black
 ;; 1 white
@@ -53,11 +48,20 @@
   (str/join "\n" (for [h (range height)]
                    (apply str (map get-px (slice image (* width h) (+ (* width h) width)))))))
 
-(let [img (reduce merge-layer (for [l (range layers)]
-                                (layer image width height l)))]
-  (println)
-  (println "Part 2")
-  (println (print-image img width height)))
+
+(defn day8-print-result []
+  (let [best-layer (apply min-key (fn [l]
+                                    (count (filter #(= 0 %) (layer image l)))) (range layers))
+        one-count (count (filter #(= 1 %) (layer image best-layer)))
+        two-count (count (filter #(= 2 %) (layer image best-layer)))
+        result (* one-count two-count)]
+    (let [img (reduce merge-layer (for [l (range layers)]
+                                    (layer image width height l)))]
+      (println "Day 8")
+      (println "Part 1 " result) ;; 1792
+      (println "Part 2")
+      (println (print-image img width height))
+      (println))))
 
 
 ;; □■■■■■■□□■□□□□■■□□■■□■■□■

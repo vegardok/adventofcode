@@ -45,7 +45,9 @@
         path (cs/union uniq-from-path uniq-to-path)]
     (count path)))
 
-(let [graph (gen-graph input/day6-input)]
-  (println "Day 6")
-  (println "Part 1 " (graph-size graph))
-  (println "Part 2 " (orbital-transfers graph :YOU :SAN)))
+(defn day6-print-result []
+  (time
+   (let [graph (gen-graph input/day6-input)]
+     (println "Day 6")
+     (println "Part 1 " (graph-size graph))
+     (println "Part 2 " (orbital-transfers graph :YOU :SAN)))))

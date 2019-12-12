@@ -3,9 +3,10 @@
             [aoc-2019.computer :as c]
             [aoc-2019.inputs :as input]))
 
-(let []
-  (println "Day 5")
-  (println "Part 1")
-  (c/computer-loop input/day5-input (fn [] 1) println) ;; 1 => 15508323
-  (c/computer-loop input/day5-input (fn [] 5) println) ;; 5 => 9006327
-  nil)
+(defn print-day-5 []
+  (let []
+    (println "Day 5")
+    ;; 1 => 15508323
+    (println "Part 1 " (c/computer-loop input/day5-input (fn [] 1) println))
+    ;; 5 => 9006327
+    (println "Part 2 " (c/computer-loop input/day5-input (fn [] 5) println))))

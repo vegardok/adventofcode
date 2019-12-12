@@ -74,11 +74,6 @@
   (is (= 159 (closest-intersection (get inputs/day3-input-test1 :first) (get inputs/day3-input-test1 :second))))
   (is (= 135 (closest-intersection (get inputs/day3-input-test2 :first) (get inputs/day3-input-test2 :second)))))
 
-(println "Day 3")
-(println "Part 1" (closest-intersection (get inputs/day3-input :first) (get inputs/day3-input :second)))
-
-
-
 (defn closest-intersection-walk [data]
   (let [intersections (intersection-wires (get data :first) (get data :second))
         first-path (walk (get data :first))
@@ -89,4 +84,10 @@
   (is (= 610 (closest-intersection-walk inputs/day3-input-test3)))
   (is (= 410 (closest-intersection-walk inputs/day3-input-test4))))
 
-(println "Part 2", (closest-intersection-walk inputs/day3-input))
+
+(defn day3-print-result []
+  (time
+   (do
+     (println "Day 3")
+     (println "Part 1" (closest-intersection (get inputs/day3-input :first) (get inputs/day3-input :second)))
+     (println "Part 2", (closest-intersection-walk inputs/day3-input)))))
