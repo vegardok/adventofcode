@@ -21,7 +21,7 @@
 
 ;; (do (println) (c/computer-loop inputs/day9-input) nil)
 
-(defn day9-print-result []
+(defn print-result []
   (time
    (do
   (println "Day 9")
@@ -30,6 +30,3 @@
   (print "Part 2 ")
   (c/computer-loop inputs/day9-input (fn [] 2) println)
   nil)))
-
-
-(day9-print-result)

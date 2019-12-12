@@ -93,7 +93,7 @@
    (= 4039164
       (find-max-thrust amp-feedback-circuit inputs/day7-input 5 9))))
 
-(defn day7-print-result []
+(defn print-result []
   (time
    (do
      (println "Day 7")

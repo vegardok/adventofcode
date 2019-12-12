@@ -18,7 +18,7 @@
        (recur key max-noun max-verb (inc current-noun) 0)
        (recur key max-noun max-verb current-noun (inc current-verb))))))
 
-(defn day2-print-result []
+(defn print-result []
   (time
    (let [noun 12
          verb 2

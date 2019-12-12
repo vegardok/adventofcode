@@ -1,5 +1,6 @@
 (ns aoc-2019.3
   (:require [aoc-2019.inputs :as inputs]))
+
 (use 'clojure.test
      'clojure.set)
 
@@ -85,7 +86,7 @@
   (is (= 410 (closest-intersection-walk inputs/day3-input-test4))))
 
 
-(defn day3-print-result []
+(defn print-result []
   (time
    (do
      (println "Day 3")

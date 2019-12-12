@@ -45,7 +45,7 @@
         path (cs/union uniq-from-path uniq-to-path)]
     (count path)))
 
-(defn day6-print-result []
+(defn print-result []
   (time
    (let [graph (gen-graph input/day6-input)]
      (println "Day 6")

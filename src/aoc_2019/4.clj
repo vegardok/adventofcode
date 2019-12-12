@@ -38,7 +38,7 @@
   (is (not (has-strict-two-consectutive-numbers? 1323)))
   (is (not (has-strict-two-consectutive-numbers? 1222))))
 
-(defn day4-print-result []
+(defn print-result []
   (time
    (let [inc-digits (filter increasing-digits? input)
          result-part-1 (filter has-two-consectutive-numbers? inc-digits)
@@ -46,4 +46,4 @@
      (println "Day 4")
      (println "Part 1" (count result-part-1))
      (println "Part 1" (count result-part-2))
-     (println)))
+     (println))))

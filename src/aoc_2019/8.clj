@@ -49,7 +49,7 @@
                    (apply str (map get-px (slice image (* width h) (+ (* width h) width)))))))
 
 
-(defn day8-print-result []
+(defn print-result []
   (let [best-layer (apply min-key (fn [l]
                                     (count (filter #(= 0 %) (layer image l)))) (range layers))
         one-count (count (filter #(= 1 %) (layer image best-layer)))

@@ -20,7 +20,7 @@
 (correct-fuel-requirement 100756) ;; 50346
 
 
-(defn day1-print-result []
+(defn print-result []
   ;; Part 1
   (time
    (let [part1 (reduce + (map fuel-requirement in/input-day1))
