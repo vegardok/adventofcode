@@ -19,53 +19,46 @@
            (:position robot-state))]
       (assoc robot-state :position new-pos))))
 
-(defn setup
-  ([] (setup {}))
-  ([panel-state]
-   (let [panel-state (atom panel-state)
-         robot-state (atom { :direction 0 :position [0 0]})
-         input-flipper (atom 0)
 
-         camera-fn (fn []
-                     (let [{ [x y] :position } @robot-state
-                           panel @panel-state]
-                       (-> panel
-                           (get x {})
-                           (get y 0))))
+(defn camera-fn [robot-state panel-state]
+  (fn []
+    (let [{ [x y] :position } @robot-state
+          panel @panel-state]
+      (-> panel
+          (get x {})
+          (get y 0)))))
 
-         get-panel (fn []
-                     (let [p @panel-state
-                           lines-index (-> p keys sort)
-                           lines (map (fn [line-n]
-                                        (let [line (get p line-n)
-                                              line-index (-> line keys sort)]
-                                          (map (fn [i] (-> p (get line-n)(get i))) line-index))) lines-index)
-                           ]
-                       (string/join "\n" (map string/join lines))))
+(defn get-panel [panel-state]
+    (let [p @panel-state
+          lines-index (-> p keys sort)
+          lines (map (fn [line-n]
+                       (let [line (get p line-n)
+                             line-index (-> line keys sort)]
+                         (map (fn [i] (-> p (get line-n)(get i))) line-index))) lines-index)
+          ]
+      (string/join "\n" (map string/join lines))))
 
-         paint (fn [color]
-                 (let [{position :position} @robot-state
-                       [x y] position]
-                   (swap! panel-state
-                          (fn [old-panel] (paint- old-panel x y color)))))
+(defn paint [robot-state panel-state color]
+  (let [{position :position} @robot-state
+        [x y] position]
+    (swap! panel-state
+           (fn [old-panel] (paint- old-panel x y color)))))
 
-         turn-and-move (fn [input]
-                         (let [dir-map {0 dec 1 inc}]
-                           (swap! robot-state
-                                  (fn [old-robot-state]
-                                    (-> old-robot-state
-                                        (update :direction #(mod ((get dir-map input) %) 4))
-                                        (move))))))
+(defn turn-and-move [robot-state input]
+    (let [dir-map {0 dec 1 inc}]
+      (swap! robot-state
+             (fn [old-robot-state]
+               (-> old-robot-state
+                   (update :direction #(mod ((get dir-map input) %) 4))
+                   (move))))))
 
-         write (fn [op]
-                 (let [flip @input-flipper]
-                   (case flip
-                     0 (paint op)
-                     1 (turn-and-move op))
-                   (swap! input-flipper #(mod (+ 1 %) 2))))
-         ]
-     {:read camera-fn :write write :get-panel get-panel}
-     )))
+(defn write [input-flipper robot-state panel-state ]
+  (fn [op]
+    (let [flip @input-flipper]
+      (case flip
+        0 (paint robot-state panel-state op)
+        1 (turn-and-move robot-state op))
+      (swap! input-flipper #(mod (+ 1 %) 2)))))
 
 
 
@@ -73,24 +66,32 @@
   (time
    (do
      (println "Day 11")
-     (let [{ write :write read :read get-panel :get-panel} (setup)]
+     (let [panel-state (atom {})
+           robot-state (atom { :direction 0 :position [0 0]})
+           input-flipper (atom 0)
+           write (write input-flipper robot-state panel-state)
+           read (camera-fn robot-state panel-state)]
        (c/computer-loop inputs/day11-input read write)
-       (print "Part 1 " (count (filter #(or (= \0 %) (= \1 %)) (get-panel))))
+       (print "Part 1 " (count (filter #(or (= \0 %) (= \1 %)) (get-panel panel-state))))
        (println))
 
-     (let [{ write :write read :read get-panel :get-panel} (setup {0 { 0 1}})]
+     (let [panel-state (atom {0 {0 1}})
+           robot-state (atom { :direction 0 :position [0 0]})
+           input-flipper (atom 0)
+           write (write input-flipper robot-state panel-state)
+           read (camera-fn robot-state panel-state)]
        (c/computer-loop inputs/day11-input read write)
        (println "Part 2 ")
-       (println (-> (get-panel)
+       (println (-> (get-panel panel-state)
                     (string/replace \0 \ )
                     (string/replace \1 \#)))
+       (println))
 
-       ;;   ##   #### ###  #  # ####   ##  ##  ###
-       ;;  #  #  #    #  # # #     #    # #  # #  #
-       ;;  #     ###  #  # ##     #     # #    #  #
-       ;;  #     #    ###  # #   #      # #    ###
-       ;;  #  #  #    #    # #  #    #  # #  # # #
-       ;;  ##    #### #    #  # ####  ##   ##  #  #
-
-       (println)))))
+     ;;   ;;   ##   #### ###  #  # ####   ##  ##  ###
+     ;;   ;;  #  #  #    #  # # #     #    # #  # #  #
+     ;;   ;;  #     ###  #  # ##     #     # #    #  #
+     ;;   ;;  #     #    ###  # #   #      # #    ###
+     ;;   ;;  #  #  #    #    # #  #    #  # #  # # #
+     ;;   ;;  ##    #### #    #  # ####  ##   ##  #  #
+     )))
 (print-results)
