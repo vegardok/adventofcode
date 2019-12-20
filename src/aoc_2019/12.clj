@@ -2,102 +2,107 @@
   (:require [aoc-2019.inputs :as inputs]
             [clojure.math.combinatorics :as combo]
             [clojure.set :as cset]
-            [clojure.string :as string]))
+            [clojure.string :as string]
+            [aoc-2019.inputs :as input]))
 
-(defn gen-empty-velocity [positions]
-  (vec (for [_ (range (count positions))] { :x 0 :y 0 :z 0})))
+(defn make-moon [position]
+  { :position position :velocity { :x 0 :y 0 :z 0 }})
 
-(defn calc-velocity [pos1 pos2 vel dim]
-  (+ (dim vel) (if (= (dim pos1 ) (dim pos2 )) 0 (if (< (dim pos1 ) (dim pos2 )) 1 -1))))
+(defn make-moons [input] (vec (map make-moon input)))
 
-(defn calc-position [pos vel dim]
-  (+ (dim pos) (dim vel)))
+(defn gravity [moon1 moon2 dim]
+  (let [{ { p1 dim } :position } moon1
+        { { p2 dim } :position } moon2]
+    (update-in moon1 [:velocity dim]
+               #(+ % (if (= p1 p2) 0 (if (> p1 p2) -1 1))))))
 
-(def pairs (filter #(not=(first %) (second %))
-                      (combo/selections (range 4) 2)))
+(defn velocity [moon dim]
+  (let [{{ v dim } :velocity} moon]
+    (update-in moon [:position dim]
+               #(+ % v))))
 
-(defn update-velocity
-  ([pos vel] (update-velocity pos vel pairs))
-  ([pos vel pairs]
-   (if (empty? pairs)
-     vel
-     (let [[[from to] & remaining-pairs] pairs
-           x (calc-velocity (nth pos from) (nth pos to) (nth vel from) :x)
-           y (calc-velocity (nth pos from) (nth pos to) (nth vel from) :y)
-           z (calc-velocity (nth pos from) (nth pos to) (nth vel from) :z)
+(defn moon-energy [moon]
+  (* (reduce #(+ %1 (Math/abs %2)) 0 (vals (:position moon)))
+     (reduce #(+ %1 (Math/abs %2)) 0 (vals (:velocity moon)))))
 
-           new-velocity {:x x :y y :z z }
-           new-velcities (assoc vel from new-velocity)]
-       (recur pos new-velcities remaining-pairs)))))
-
+(defn energy [moons]
+  (->> moons
+       (map moon-energy)
+       (reduce +)))
 
 (defn step
-  ([steps positions] (step steps positions (gen-empty-velocity positions)))
-  ([steps positions velocities]
-   (let [new-velocities (update-velocity positions velocities)
-         new-positions (map-indexed (fn [index pos]
-                                      {:x (calc-position pos (nth new-velocities index) :x)
-                                       :y (calc-position pos (nth new-velocities index) :y)
-                                       :z (calc-position pos (nth new-velocities index) :z)
-                                       }
-                                      ) positions)]
-     (if (= steps 1)
-       {:positions new-positions :velocities new-velocities }
-       (recur (dec steps) new-positions new-velocities)
-       ))))
+  ([moons] (-> moons
+               (step :x)
+               (step :y)
+               (step :z)))
+  ([moons dim]
+   (->>
+    (combo/combinations (range (count moons)) 2)
+    (reduce (fn [moons [i j] ]
+              (-> moons
+                  (update i #(gravity % (nth moons j) dim))
+                  (update j #(gravity % (nth moons i) dim))))
+            moons)
+    (map #(velocity % dim))
+    (vec))))
 
-(defn find-dup-step
-  ([positions] (find-dup-step positions (gen-empty-velocity positions) 0 #{}))
-  ([positions velocities steps seen-states]
-   (println (first positions) ;; (first velocities)
-            )
-   (let [new-velocities (update-velocity positions velocities)
-         new-positions (map-indexed (fn [index pos]
-                                      (calc-position pos (nth new-velocities index) :x)
-                                      ) positions)
-         state [new-positions new-velocities]]
-     (if (= (mod steps 100000) 0) (print "."))
-     (if (= (mod steps 1000000) 0) (println))
-     (if (contains? seen-states state)
-       steps
-       (recur new-positions new-velocities (inc steps) (conj seen-states state))
-       ))))
+(defn step-n
+  ([moons n ] (-> moons
+                 (step-n n :x)
+                 (step-n n :y)
+                 (step-n n :z)))
+  ([moons n dim]
+   (loop [moons moons i 0]
+     (if (= i n)
+       moons
+       (recur (step moons dim) (inc i))))))
+
+(defn part1 []
+  (-> inputs/day12-input
+      make-moons
+      (step-n 1000)
+      energy))
+
+(defn find-repeating-location
+  ([moons dim] (find-repeating-location moons dim moons))
+  ([moons dim find-me]
+   (let [looking-for (->> find-me
+                          (map :velocity)
+                          (map dim)
+                          (vec))]
+     (loop [moons (step moons dim)
+            i 1]
+       (if (= (->> moons
+                   (map :velocity)
+                   (map dim)
+                   (vec))
+              looking-for)
+
+         (* i 2)
+         (recur (step moons dim) (inc i)))))))
+
+(defn gcd [a b]
+        (if (zero? b)
+          a
+          (recur b (mod a b))))
+
+(defn lcm [a b]
+  (/ (* a b) (gcd a b)))
+
+(defn part2 []
+  (reduce
+   #(lcm % %2)
+   (list
+    (find-repeating-location (make-moons input/day12-input) :x)
+    (find-repeating-location (make-moons input/day12-input) :y)
+    (find-repeating-location (make-moons input/day12-input) :z))) )
 
 
-;; (defn find-dup-step
-;;   ([positions] (find-dup-step 0 positions (gen-empty-velocity positions) #{}))
-;;   ([steps positions velocities seen-pos]
-;;    (let [new-velocities (update-velocity positions velocities)
-;;          new-positions (map-indexed (fn [index pos]
-;;                                       {:x (calc-position pos (nth new-velocities index) :x)
-;;                                        :y (calc-position pos (nth new-velocities index) :y)
-;;                                        :z (calc-position pos (nth new-velocities index) :z)
-;;                                        }) positions)
-;;          pairs (map (fn [%1 %2] (string/join \, [ (vals %1) (vals %2)])) new-positions new-velocities]
-
-;;      (if (not (empty? (cset/intersection seen-pos
-
-;;      (if (and (reduce #(or %1 %2) (for [pos new-positions] (contains? seen-pos pos)))
-;;               (reduce #(or %1 %2) (for [vel new-velocities] (contains? seen-vel vel))))
-;;        steps
-;;        (recur
-;;         (inc steps)
-;;         new-positions
-;;         new-velocities
-;;         (cset/union seen-pos (set new-positions))
-;;         (cset/union seen-vel (set new-positions)))))))
-
-(defn energy [positions velocities]
-  (reduce +
-          (map * (for [p positions] (reduce + (map #(Math/abs %) (vals p))))
-               (for [c velocities] (reduce + (map #(Math/abs %) (vals c)))))))
-
-(defn print-result []
+(defn print-results []
   (time
-   (let [{ velocities :velocities positions :positions } (step 1000 inputs/day12-input)]
+   (do
      (println "Day 12")
-     (println "Part 1 " (energy positions velocities))
-     (println "Part 2 " (find-dup-step inputs/day12-test-input))
-     )))
+     (println "Part 1" (part1))
+     (println "Part 1" (part2)))))
 
-;; (print-result)
+;; (print-results)
