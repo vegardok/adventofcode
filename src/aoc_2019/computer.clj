@@ -96,16 +96,38 @@
 
 (defn computer-loop-
   [pointer program in-fn out-fn exit-out-fn rel-offset]
-   (let [op (parse-op pointer program
+  (let [op (parse-op pointer program
+                     in-fn out-fn exit-out-fn rel-offset)
+        next-step (op pointer program)
+        next-pointer (:pointer next-step pointer)
+        next-program (:program next-step program)
+        next-rel-offset (:rel-offset next-step rel-offset)]
+
+    (if (= pointer next-pointer)
+      program
+      (recur next-pointer next-program in-fn out-fn exit-out-fn next-rel-offset))))
+
+(defn computer-step-by-step
+  ([program in-fn out-fn]
+   (computer-step-by-step 0 program in-fn out-fn identity 0))
+  ([pointer program in-fn out-fn exit-out-fn rel-offset]
+
+     (let [op (parse-op pointer program
                       in-fn out-fn exit-out-fn rel-offset)
          next-step (op pointer program)
          next-pointer (:pointer next-step pointer)
          next-program (:program next-step program)
          next-rel-offset (:rel-offset next-step rel-offset)]
 
-     (if (= pointer next-pointer)
-       program
-       (recur next-pointer next-program in-fn out-fn exit-out-fn next-rel-offset))))
+     [next-program
+      (fn [] (computer-step-by-step
+              next-pointer
+              next-program
+              in-fn
+              out-fn
+              exit-out-fn
+              next-rel-offset))])))
+
 (defn computer-loop
   ([program]
    (computer-loop- 0 program #(Integer/parseInt (read-line)) println identity 0))
