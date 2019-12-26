@@ -2446,7 +2446,7 @@
 3 MSKT, 3 NDJG => 5 QDHJT")
 
 (def day14-input-test-1 "9 ORE => 2 A
-q8 ORE => 3 B
+8 ORE => 3 B
 7 ORE => 5 C
 3 A, 4 B => 1 AB
 5 B, 7 C => 1 BC
