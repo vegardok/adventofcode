@@ -16,7 +16,18 @@
    - Day 11 - [[2017/src/11.py][11.py]]
    - Day 12 - [[2017/src/12.py][12.py]]
    - Day 13 - [[2017/src/13.py][13.py]]
-
+   - Day 14 - [[#2017][MISSING]]
+   - Day 15 - [[#2017][MISSING]]
+   - Day 16 - [[#2017][MISSING]]
+   - Day 17 - [[#2017][MISSING]]
+   - Day 18 - [[#2017][TODO]]
+   - Day 19 - [[#2017][TODO]]
+   - Day 20 - [[#2017][TODO]]
+   - Day 21 - [[#2017][TODO]]
+   - Day 22 - [[#2017][TODO]]
+   - Day 23 - [[#2017][TODO]]
+   - Day 24 - [[#2017][TODO]]
+   - Day 25 - [[#2017][TODO]]
 
 ** 2018
 
@@ -35,6 +46,16 @@
    - Day 13 - [[2018/src/13.js][13.js]]
    - Day 15 - [[2018/src/15.js][15.js]]
    - Day 16 - [[2018/src/16.js][16.js]]
+   - Day 17 - [[#2017][MISSING]]
+   - Day 18 - [[#2017][MISSING]]
+   - Day 19 - [[#2017][MISSING]]
+   - Day 20 - [[#2017][MISSING]]
+   - Day 21 - [[#2017][MISSING]]
+   - Day 22 - [[#2017][MISSING]]
+   - Day 23 - [[#2017][MISSING]]
+   - Day 24 - [[#2017][TODO]]
+   - Day 25 - [[#2017][TODO]]
+
 
 ** 2019
 
