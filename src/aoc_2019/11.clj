@@ -1,11 +1,7 @@
 (ns aoc-2019.11
-  (:require [clojure.test :as test]
-            [clojure.string :as string]
+  (:require [clojure.string :as string]
             [aoc-2019.computer :as c]
             [aoc-2019.inputs :as inputs]))
-
-
-
 
 (defn move [robot-state]
   (let [moves {0 (fn [[x y]] [(- x 1) y])

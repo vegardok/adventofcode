@@ -1,8 +1,6 @@
 (ns aoc-2019.12
   (:require [aoc-2019.inputs :as inputs]
             [clojure.math.combinatorics :as combo]
-            [clojure.set :as cset]
-            [clojure.string :as string]
             [aoc-2019.inputs :as input]))
 
 (defn make-moon [position]

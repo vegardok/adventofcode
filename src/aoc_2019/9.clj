@@ -13,14 +13,6 @@
 (def test-program
   [109, 10, 3, 10, 203, 1, 99])
 
-;; (do (println) (c/computer-loop test-program-1) nil)
-;; (do (println) (c/computer-loop test-program-2) nil)
-;; (do (println) (c/computer-loop test-program-3) nil)
-
-;; (c/computer-loop test-program)
-
-;; (do (println) (c/computer-loop inputs/day9-input) nil)
-
 (defn print-result []
   (time
    (do

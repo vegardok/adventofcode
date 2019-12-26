@@ -1,7 +1,6 @@
 (ns aoc-2019.13
   (:require [aoc-2019.inputs :as inputs]
             [aoc-2019.computer :as c]
-            [clojure.set :as cset]
             [clojure.string :as string]))
 
 (defn get-panel [{ p :panel }]

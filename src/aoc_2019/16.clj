@@ -1,8 +1,6 @@
 (ns aoc-2019.16
   (:require [aoc-2019.inputs :as inputs]
-            [clojure.set :as cset]
-            [clojure.string :as string]
-            [clojure.test :as test]))
+            [clojure.string :as string]))
 
 (defn parse [s] (map #(Integer/parseInt (str %)) s))
 

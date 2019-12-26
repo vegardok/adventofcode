@@ -1,10 +1,6 @@
 (ns aoc-2019.8
   (:require [clojure.test :as test]
             [clojure.string :as str]
-            [clojure.core.async :refer
-             [<! <!! >! >!! alt! alt!! alts! alts!! chan go onto-chan thread]]
-            [clojure.math.combinatorics :as combo]
-            [aoc-2019.computer :as comp]
             [aoc-2019.inputs :as inputs]))
 
 (def width 25)

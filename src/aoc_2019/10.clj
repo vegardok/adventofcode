@@ -1,6 +1,5 @@
 (ns aoc-2019.10
   (:require [clojure.string :as string ]
-            [clojure.set :as cset]
             [aoc-2019.inputs :as inputs]) )
 
 (defn- angle [a b]
