@@ -2,7 +2,7 @@
   (:require [aoc-2019.inputs :as inputs]
             [aoc-2019.computer :as c]
             [clojure.set :as cset]
-            [clojure.string :as string]))
+            [clojure.string :as string :refer [split]]))
 
 
 
@@ -59,7 +59,7 @@
    (let [{requirements :requirements
           makes :makes } (get inputs chem { :makes 1 :requirements { "ORE" 1 }})
          take-n (Math/ceil (/ n makes))]
-     {:chem chem :makes makes :reqs requirements}
+     ;; {:chem chem :makes makes :reqs requirements}
      (map (fn [[chem n]] [chem (* n take-n)]) requirements))))
 
 
@@ -83,7 +83,6 @@
               {}
               (map
                (fn [[c n]]
-
                  [c (mod (- n (* n foo)) n)]) costs)))
       ]
      )))
