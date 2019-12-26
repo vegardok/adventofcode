@@ -21,7 +21,7 @@
 (defn parse [input]
   (into {} (map parse-line (split input #"\n"))))
 
-(def inputs (parse inputs/day14-input-test-1))
+(def inputs (parse inputs/day14-input-test-4))
 
 
 (defn is-dep-of [a b]
@@ -65,26 +65,17 @@
 
 (defn cost
   ([[chem n]]
-   (cost chem n {}))
+   (cost chem n))
   ([chem n]
-   (cost chem n {}))
-  ([chem n overflow]
 
    (let [{requirements :requirements
           makes :makes } (get inputs chem { :MAKES 1 :requirements { "ORE" 1 }})
          take-n (Math/ceil (/ n makes))
          foo (* (mod n makes) (/ 1 makes))
          costs (map (fn [[c n]]
-                      [c (- (* n take-n) (get-in overflow [chem c] 0))]) requirements)
+                      [c (* n take-n)]) requirements)
          ]
-     [costs
-      (assoc overflow chem
-             (into
-              {}
-              (map
-               (fn [[c n]]
-                 [c (mod (- n (* n foo)) n)]) costs)))
-      ]
+     costs
      )))
 
 (defn merge-chems [list]
