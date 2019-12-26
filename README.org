@@ -38,6 +38,7 @@
 
 ** 2019
 
+   - [[2019/src/aoc_2019/computer.clj][Intcode computer]]
    - Day 1 [[2019/src/aoc_2019/1.clj][1.clj]]
    - Day 2 [[2019/src/aoc_2019/2.clj][2.clj]]
    - Day 3 [[2019/src/aoc_2019/3.clj][3.clj]]
