@@ -1,17 +1,7 @@
 (ns aoc-2019.15
   (:require [aoc-2019.inputs :as inputs]
             [aoc-2019.computer :as c]
-            [clojure.set :as cset]
             [clojure.string :as string]))
-
-(defn get-panel [{ p :panel }]
-  (let [lines-index (-> p keys sort)
-        lines (map (fn [line-n]
-                     (let [line (get p line-n)
-                           line-index (-> line keys sort)]
-                       (map (fn [i] (-> p (get line-n)(get i))) line-index))) lines-index)
-        ]
-    (string/join "\n" (map string/join lines))))
 
 
 (def print-map
@@ -23,34 +13,31 @@
    :south "↓"
    :west "←"
    :east "→"
+   :nodir "x"
    })
 
-(def arne
-  { 0 :north
-   1 :south
-   2 :west
-   3 :east })
 
-(defn print-game-state [state]
-  (let [{ panel :panel
-         { x :x y :y } :location
-         exploring :exploring
-         direction :direction
-         queue :queue
-         path :path-taken
-         } state
-        panel (assoc-in panel [x y] (get arne direction))
+(defn print-game-state
+  [{ panel :panel
+    { x :x y :y } :location
+    direction :direction
+    path :path-taken
+    }]
+  (let [dir-map {0 :north
+                 1 :south
+                 2 :west
+                 3 :east
+                 nil :nodir}
+        panel (assoc-in panel [x y] (get dir-map direction))
         from-x (apply min (keys panel))
         to-x (apply max (keys panel))
         from-y (apply min (flatten (map keys (vals panel))))
         to-y (apply max (flatten (map keys (vals panel))))]
     (println)
-    (println "---")
+    ;; (println "---")
     (println "location" { :x x :y y })
-    (println "exploring" exploring)
-    (println "queue" queue)
-    (println "path" path)
-
+    (println "direction" direction)
+    ;; (println "path" path)
     (println (string/join "\n"
                           (map
                            (fn [x]
@@ -60,22 +47,7 @@
                                (range from-y (inc to-y)))))
                            (range from-x (inc to-x)))))))
 
-(defn write-status [state]
-  (let [state-map
-        {0 :wall
-         1 :hall
-         2 :oxygen }]
-    (fn [op]
-      (swap!
-       state
-       (fn [state]
-         (let [{location :location
-                direction :direction} state
-               { x :x y :y } (move direction location)]
-           (assoc-in state [:panel x y] (get state-map op))))))))
-
-
-(defn move [op location]
+(defn move-op [op location]
   (case op
     0 (update location :x dec) ;; north
     1 (update location :x inc) ;; south
@@ -86,12 +58,14 @@
 (defn get-valid-neighbour-moves
   [{panel :panel
     location :location
+    explored :explored
     { x :x y :y } location
     }]
   (->>
    (range 4)
-   (map (fn [op] [op (move op location)]))
-   (filter (fn [[op { x :x y :y}]] (= :hall (get-in panel [x y] ))))
+   (map (fn [op] [op (move-op op location)]))
+   (filter (fn [[op { x :x y :y}]] (and (= :hall (get-in panel [x y] ))
+                                        (not (get-in explored [x y])))))
    (map first)
    ))
 
@@ -102,7 +76,7 @@
     }]
   (->>
    (range 4)
-   (map (fn [op] [op (move op location)]))
+   (map (fn [op] [op (move-op op location)]))
    (filter (fn [[op { x :x y :y}]] (nil? (get-in panel [x y] ))))))
 
 (defn get-explore-move
@@ -114,30 +88,22 @@
 
         {exploring :exploring
          location :location
-         status :status
          direction :direction
          } state
         moves (get-unknown-neighbour-moves state)
-        go-back (not= location exploring)]
+        go-back (and (not (nil? direction))
+                     (not= location exploring))]
     (if go-back
       (get turn-around-map direction)
       (-> moves first first))))
 
 (defn stop-exploring [state]
-  (let [{ status :status
-         exploring :exploring
-         location :location
-         } state
-        move (get-explore-move state)
-        ]
-    (and (nil? move) (= location exploring))))
+  (and (nil? (get-explore-move (assoc state :ignore true)))))
 
 (defn update-explore-direction [state]
-  (let [{ status :status
-         exploring :exploring
-         } state
-        move (get-explore-move state)
-        ]
+  (let [{ exploring :exploring
+         location :location } state
+        move (get-explore-move state)]
     (-> state
         (assoc :direction move)
         (update :exploring #(if (nil? move) nil %))
@@ -149,7 +115,7 @@
       state
       (let [{location :location
              panel :panel} state
-            { x :x y :y } (move direction location)
+            { x :x y :y } (move-op direction location)
             status (get-in panel [x y])
             moved (= status :hall)
             ]
@@ -164,45 +130,146 @@
          (swap!
           state
           (fn [state]
-            (let [{ exploring :exploring } state
-                  stop (stop-exploring state)]
+            (let [{ exploring :exploring } state]
               (if (nil? exploring)
                 state
                 (->> state
-                     update-location-after-walk
-                     update-explore-direction
-                     )
+                     update-explore-direction)
                 ))))]
       (inc (:direction new-state)))))
 
+(def state-map
+  {0 :wall
+   1 :hall
+   2 :oxygen })
+
+(defn write-status [state]
+  (fn [op]
+    (swap!
+     state
+     (fn [state]
+       (let [{location :location
+              direction :direction} state
+             { x :x y :y } (move-op direction location)
+             state (assoc-in state [:panel x y] (get state-map op))]
+         (if (= (get state-map op) :oxygen)
+           (print-game-state state))
+           (if (not= (get state-map op) :wall)
+             (assoc state :location {:x x :y y })
+           state))))))
+
 (defn explore-program
-  [program location]
-  (let [state (atom {:location location
-                     :status nil
-                     :panel {}
-                     :direction nil
-                     :exploring location
-                     :iter 0
-                     })
-        write-status (write-status state)
-        get-movement (explore state)
-        [first-program step] (c/computer-step-by-step program get-movement write-status)
-        ]
+  [program state]
+  (if (stop-exploring state)
+    []
+    (let [state (atom (assoc state :exploring (:location state)))
+          write-status (write-status state)
+          get-movement (explore state)
+          step (c/computer-step-by-step program get-movement write-status)]
 
-    (let [[next-program state]
-          (loop [next-program first-program
-                 step step]
-            (let [
-                  [next-program step] (step)
-                  state-o @state
-                  stop (stop-exploring state-o)
-                  ]
-              (if stop
-                [next-program state]
-                (recur next-program step))))]
-          (print-game-state @state)
-          (println (get-valid-neighbour-moves @state))
-          [next-program @state ]
-          )))
+      (loop [step step]
+        (let [stop (stop-exploring @state)
+              [next-program step] (step)]
+          (if stop
+            (vec (map (fn [move] [next-program @state move])
+                      (get-valid-neighbour-moves @state)))
+            (recur step )))))))
 
-(explore-program inputs/day15-input { :x 0 :y 0 })
+
+(defn write-after-move [state]
+  (fn [op]
+    (swap!
+     state
+     (fn [state]
+       ;;  #dbg
+       (let [{location :location
+              direction :direction } state
+             { x :x y :y } location ]
+         (-> state
+             (assoc :direction nil)
+             (assoc :exploring nil)
+             (assoc :location (move-op direction location))
+             (update :path-taken #(conj % direction))
+             (assoc-in [:explored x y] true)
+             ))))))
+
+(defn move-program
+  [program state]
+  (let [starting-location (:location state)
+        state (atom state)
+        write-after-move (write-after-move state)
+        get-movement (fn [] (inc (:direction @state)))
+        step (c/computer-step-by-step program get-movement write-after-move)]
+    (loop [step step]
+      (let [[next-program step] (step)]
+        (if (not= starting-location (:location @state))
+          [next-program @state]
+          (recur step))))))
+
+
+(defn deep-merge [a & maps]
+  (if (map? a)
+    (apply merge-with deep-merge a maps)
+    (apply merge-with deep-merge maps)))
+
+(defn explore-and-move []
+  (let [queue (explore-program
+               inputs/day15-input
+               {:location { :x 0 :y 0 }
+                :panel {}
+                :direction nil
+                :iter 0
+                })]
+
+    (loop [queue queue
+           full-state {}
+           ]
+      (if (empty? queue)
+        full-state
+        (let [[ [program state direction] & rest] queue
+              [program-after-move state-after-move]
+              (move-program program (assoc state :direction direction))
+              new-moves (explore-program program-after-move state-after-move)
+              ]
+          ;; (print-game-state
+          ;;  (apply deep-merge full-state (map second new-moves)))
+          (recur (into (vec rest) new-moves)
+                 (apply deep-merge full-state (map second new-moves))
+                 ))))))
+
+
+
+(defn get-moves [panel explored location]
+  (->>
+   (range 4)
+   (map (fn [op] (move-op op location)))
+   (filter (fn [{ x :x y :y }]
+             (and
+              (= :hall (get-in panel [x y] ))
+              (not (get-in explored [x y]))
+              )))))
+
+(defn longest-path [panel location]
+  (loop [explored (assoc-in {} [(:x location) (:y location)] true)
+         queue (map (fn [l] [l [l]]) (get-moves panel explored location))
+         longest-queue []
+         ]
+
+    (let [[first & rest ] queue
+          [move q] first
+          { x :x y :y } move
+          explored (assoc-in explored [x y] true)
+          new-moves (map (fn [l] [l (conj q l)]) (get-moves panel explored move))
+          ]
+      (if (or (nil? move )(empty? (conj rest new-moves)))
+        longest-queue
+        (recur explored
+               (into (vec rest) new-moves)
+               (if (< (count longest-queue) (count q)) q longest-queue)
+               )))))
+
+
+(defn print-result []
+  (let [final-state (explore-and-move)]
+    (println (count (longest-path (:panel final-state) { :x -16 :y -14 })))
+    ))
