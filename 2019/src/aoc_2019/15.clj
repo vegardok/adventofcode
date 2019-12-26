@@ -37,7 +37,8 @@
     ;; (println "---")
     (println "location" { :x x :y y })
     (println "direction" direction)
-    ;; (println "path" path)
+    (println "path" path)
+    (println "path-length" (count path))
     (println (string/join "\n"
                           (map
                            (fn [x]
@@ -271,5 +272,7 @@
 
 (defn print-result []
   (let [final-state (explore-and-move)]
+    (println "Part 2")
     (println (count (longest-path (:panel final-state) { :x -16 :y -14 })))
     ))
+(print-result)
