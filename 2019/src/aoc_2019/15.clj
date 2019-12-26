@@ -275,4 +275,4 @@
     (println "Part 2")
     (println (count (longest-path (:panel final-state) { :x -16 :y -14 })))
     ))
-(print-result)
+;; (print-result)
