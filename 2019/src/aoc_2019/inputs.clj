@@ -2445,6 +2445,13 @@
 3 DQHBG, 4 WCFT => 1 FTPQ
 3 MSKT, 3 NDJG => 5 QDHJT")
 
+(def day14-input-test-0 "10 ORE => 10 A
+1 ORE => 1 B
+7 A, 1 B => 1 C
+7 A, 1 C => 1 D
+7 A, 1 D => 1 E
+7 A, 1 E => 1 FUEL")
+
 (def day14-input-test-1 "9 ORE => 2 A
 8 ORE => 3 B
 7 ORE => 5 C
@@ -2494,6 +2501,7 @@
 7 XCVML => 6 RJRHP
 5 BHXH, 4 VRPVC => 5 LTCX")
 
+;; 301997
 (def day14-input-test-5 "3 PTZH, 14 MHDKS, 9 MPBVZ => 4 BDRP
 4 VHPGT, 12 JSPDJ, 1 WNSC => 2 XCTCF
 174 ORE => 4 JVNH
