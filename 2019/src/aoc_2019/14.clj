@@ -14,11 +14,11 @@
         [makes output-chem] (split to #" " )
         makes (Integer/parseInt makes)
         inputs (->> (split from #", ")
-                             (map parse-item)
-                             (map (fn [t] [(first t) (second t)]))
-                             )]
+                    (map parse-item)
+                    (map (fn [t] [(first t) (second t)]))
+                    )]
     { output-chem { :makes makes
-                       :requirements inputs}}))
+                   :requirements inputs}}))
 
 (defn parse [input]
   (into {} (map parse-line (split input #"\n"))))
@@ -47,12 +47,33 @@
                [cost overflow] (if (< 0 take)
                                  (ore-cost
                                   chem-name
-                                  (int (* take chem-n))
+                                  (bigint (* take chem-n))
                                   overflow)
                                  [0 overflow])]
-          (if (empty? rest-chems)
-            [(+ cost sum) (into {} (filter (fn [[k v]] (< 0 v))
-                                           (assoc overflow chem new-overflow))) ]
-            (recur overflow (+ sum cost) rest-chems))))))))
+           (if (empty? rest-chems)
+             [(+ cost sum) (into {} (filter (fn [[k v]] (< 0 v))
+                                            (assoc overflow chem new-overflow))) ]
+             (recur overflow (+ sum cost) rest-chems))))))))
 
-(println (first (ore-cost "FUEL" 1 {})))
+
+(defn part2 []
+  (let [max-ore 1000000000000]
+    (loop [min 1 max 10000000]
+      (let [pivot (int (/ (+ max min) 2))
+            cost (first (ore-cost "FUEL" pivot))]
+        (if (or (= min max)
+                (= min pivot)
+                (= max pivot))
+          min
+          (if (> cost max-ore)
+            (recur min pivot)
+            (recur pivot max)))))))
+
+
+(defn print-result []
+  (println "Day 14")
+  (println "Part 1 " (first (ore-cost "FUEL" 1)))
+  (let [max-cost (part2)]
+    (println "Part 2 " max-cost " : " (first (ore-cost "FUEL" max-cost)))))
+
+(print-result)
